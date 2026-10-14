@@ -10,7 +10,7 @@ st.set_page_config(
 
 st.title("Luxembourg Beyond Its Borders")
 
-df = pd.read_csv("data/trade.csv")
+# df = pd.read_csv("data/trade.csv")
 
 tab1, tab2, tab3, tab4 = st.tabs([
     "Trade Overview",
