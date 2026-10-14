@@ -1,0 +1,13 @@
+{
+  "source": "Eurostat DS-045409",
+  "reporter": "Luxembourg",
+  "source_files": [
+    "lu_trade_hs2_annual.csv",
+    "lu_trade_hs2_monthly.csv"
+  ],
+  "annual_scope": "TOTAL product (preferred); World aggregate (preferred)",
+  "monthly_scope": "TOTAL product (preferred); World aggregate (preferred)",
+  "partner_scope": "TOTAL product (preferred); Individual countries/partners only",
+  "product_scope": "HS2 only (selected products may not be exhaustive); World aggregate (preferred)",
+  "note": "Only describe these as Luxembourg total goods trade if TOTAL \u00d7 WORLD and full coverage verified."
+}

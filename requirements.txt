@@ -6,3 +6,7 @@ plotly
 scipy
 statsmodels
 pytest
+jupyter 
+jupyterlab
+notebook
+matplotlib
