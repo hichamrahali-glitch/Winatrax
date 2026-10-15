@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luxembourg's top 5 trading partners</title>
+<!--
+  D3 map shell. The Python adapter combines this file with map.css, map.js and prepared data.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<!-- WORLD_MAP_STYLES -->
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div>
+      <div class="eyebrow" id="eyebrow">Luxembourg · all goods</div>
+      <h1 id="title">Who buys the most from Luxembourg?</h1>
+    </div>
+    <div class="toggles">
+      <span class="seg" id="g-flow"><button data-v="Imports" aria-pressed="false">Imports</button><button data-v="Exports" aria-pressed="true">Exports</button></span>
+      <span class="seg" id="g-measure"><button data-v="value" aria-pressed="true">Value €</button><button data-v="quantity" aria-pressed="false">Weight t</button></span>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="mapwrap" id="mapwrap">
+      <svg id="map" role="img" aria-label="Map of Luxembourg's five largest trading partners"></svg>
+      <div class="period" id="period"></div>
+      <button class="fit" id="fit" hidden>Re-centre</button>
+      <div class="tip" id="tip" hidden></div>
+      <div class="loading" id="loading">Loading map…</div>
+    </div>
+    <aside class="panel" aria-label="Top 5 partners or selected country">
+      <div class="detail" id="detail" hidden></div>
+      <div class="kpi" id="topkpi"><div class="k" id="kpi-k">Top 5 share of exports</div><div class="v" id="kpi-v">–</div><div class="n" id="kpi-n">&nbsp;</div></div>
+      <div class="list" id="list"></div>
+    </aside>
+  </div>
+
+  <div class="timeline">
+    <button class="play" id="play" aria-label="Play"><svg viewBox="0 0 24 24" id="ico"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+    <div class="ctl">
+      <select id="step" aria-label="Step"><option selected>Yearly</option><option>Monthly</option></select>
+      <select id="speed" aria-label="Speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+    </div>
+    <div class="track">
+      <svg id="spark" aria-hidden="true"></svg>
+      <input type="range" id="scrub" min="0" max="0" value="0" aria-label="Timeline">
+      <div class="ends"><span id="t0"></span><span id="t1"></span></div>
+    </div>
+  </div>
+  <p class="note" id="note"></p>
+</div>
+
+<!-- WORLD_MAP_SCRIPT -->
+</body>
+</html>
