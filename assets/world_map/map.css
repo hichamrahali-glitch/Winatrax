@@ -124,6 +124,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .crumb:hover { text-decoration: underline; }
 .crumb.now { color: var(--fg); font-weight: 700; cursor: default; }
 .crumbs .sep { color: var(--muted); }
+button.more { justify-self: start; margin-top: 6px; font: 600 12.5px var(--font); color: var(--fg-2); background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+button.more:hover { border-color: var(--fg-2); color: var(--fg); }
+.goods ol + ol { margin-top: 5px; }
+#morep li { grid-template-columns: 18px minmax(0, 1fr) auto; }
 .goods .other { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .empty { color: var(--muted); font-size: 13px; }
 .row { cursor: pointer; }

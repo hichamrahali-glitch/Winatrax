@@ -29,8 +29,9 @@ def short(label, n=120):
     return label if len(label) <= n else label[:n - 1].rstrip(" ,;") + "…"
 
 
-def load_product_detail(top=5):
-    """Product trees of the prepared partners, cut to the top items at every level:
+def load_product_detail(top=20):
+    """Product trees of the prepared partners (already limited to the main items at every level
+    when they were built), up to `top` children per node:
     {"partners": {code: {"year", "m": {"measure|flow": {hs2: node}}}}, "labels": {code: text}},
     node = [code, amount, [child nodes]] going HS2 > HS4 > HS6 > CN8. Labels are shared
     across partners (the same CN8 text appears for many of them)."""
