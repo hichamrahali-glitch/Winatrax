@@ -12,6 +12,7 @@ import json
 import sys
 from pathlib import Path
 import seasonality
+import top5_map
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -218,7 +219,7 @@ idx = frame_indices(step)
 
 st.title("Luxembourg's trade in goods")
 tabs = st.tabs(["Partners race", "Partners lines", "Products race", "Products lines",
-                "Partner detail", "Country comparison", "Transport & CO₂", "Seasonality"])
+                "Partner detail", "Country comparison", "Transport & CO₂", "Seasonality", "World map"])
 
 # ---- 1. Partners race -------------------------------------------------------
 with tabs[0]:
@@ -581,3 +582,11 @@ with tabs[7]:
     st.header("What does Luxembourg trade?")
     # KPI cards, timeline and product charts
     seasonality.render()
+# ---- 9. World map -----------------------------------------------------------
+with tabs[8]:
+    st.caption("Luxembourg's five largest partners at each point in time, with the map zooming to them. "
+               "Press ▶ to play, drag the timeline, or switch flow and measure on the map. "
+               "The product follows the sidebar.")
+    map_blobs = {m: (D["measures"][m]["total"] if product == "TOTAL" else load_product(product)[m])
+                 for m in ("value", "quantity")}
+    top5_map.render(D, map_blobs, "all goods" if product == "TOTAL" else prod_label, measure, flow)
