@@ -467,7 +467,11 @@ function goodsList(code, flow, yr) {
   return rankedList(`${code}|${flow}|chapters`, rows, total, col, (r, j, max) => { const h = HS2[r.c] || {};
     return `<li title="${esc(h.full || h.name || r.c)}"${can ? ` class="click" role="button" tabindex="0" data-flow="${flow}" data-chap="${r.c}"` : ""}><span class="rk">${j + 1}</span><span class="gn"><small>${r.c}</small>${h.icon ? h.icon + " " : ""}${esc(h.name || "Chapter " + r.c)}</span><span class="gv">${fmt(r.v)} <small style="color:var(--muted);font-weight:400">${(r.v / total * 100).toFixed(0)}%</small></span><span class="gb"><i style="width:${(r.v / max * 100).toFixed(1)}%;background:${col}"></i></span></li>`; }, "categories");
 }
-const LEVEL = { 2: "HS2 chapter", 4: "HS4 heading", 6: "HS6 subheading", 8: "CN8 product" };
+// Customs code levels in plain words: 2 digits = broad category (HS chapter), 4 = product group
+// (HS heading), 6 = product type (HS subheading), 8 = specific product (EU CN code).
+const LEVEL = { 2: "Category", 4: "Product group", 6: "Product type", 8: "Specific product" };
+const LEVELS = { 2: "Categories", 4: "Product groups", 6: "Product types", 8: "Specific products" };
+const LEVEL_HELP = "Customs codes get more specific with each pair of digits: category (2 digits) › product group (4) › product type (6) › specific product (8).";
 function labelOf(code) {
   if (code.length === 2) { const h = HS2[code] || {}; return (h.icon ? h.icon + " " : "") + (h.name || "Chapter " + code); }
   return LABELS[code] || code;
@@ -487,17 +491,17 @@ function drawChapter(cur) {
   let body;
   if (!node) body = `<p class="empty">Nothing recorded ${S.measure === "value" ? "by value" : "by weight"} for this item in ${T ? T.year : "the detailed data"}.</p>`;
   else {
-    const [, total, kids] = node, next = kids.length ? LEVEL[kids[0][0].length] : null;
+    const [, total, kids] = node;
     const rows = kids.map(([c, v, sub]) => ({ c, v, sub })).filter(r => r.v > 0);
     body = `<div class="dk"><div class="wide"><div class="k">${esc(dir)} · ${T.year}</div><div class="v">${fmt(total)}</div>${code.length === 2 ? `<div class="n">${esc(h.full || h.name || "")}</div>` : ""}</div></div>` +
-      (rows.length ? `<section class="goods"><h3><i style="background:${col}"></i>${next}s</h3>${rankedList(`${c}|${flow}|${path.join(">")}`, rows, total, col, (r, j, max) =>
+      (rows.length ? `<section class="goods"><h3><i style="background:${col}"></i>${LEVELS[kids[0][0].length]}</h3>${rankedList(`${c}|${flow}|${path.join(">")}`, rows, total, col, (r, j, max) =>
         `<li class="prod${r.sub.length ? " click" : ""}"${r.sub.length ? ` role="button" tabindex="0" data-code="${r.c}"` : ""} title="${esc(LABELS[r.c] || r.c)}"><span class="rk">${j + 1}</span><span class="gn"><small>${r.c}</small>${esc(LABELS[r.c] || "Code " + r.c)}</span><span class="gv">${fmt(r.v)} <small style="color:var(--muted);font-weight:400">${total ? (r.v / total * 100).toFixed(0) : 0}%</small></span><span class="gb"><i style="width:${(r.v / max * 100).toFixed(1)}%;background:${col}"></i></span>${r.sub.length ? `<span class="leaf">Mainly ${r.sub[0][0]} · ${esc(LABELS[r.sub[0][0]] || "")}</span>` : ""}</li>`, "items")}</section>`
-        : `<p class="empty">This is the most detailed level: an 8-digit CN product code.</p>`);
+        : `<p class="empty">This is the most detailed level available: a specific product (8-digit code).</p>`);
   }
   const yr = yearFor(cur.i).yr;
   el.innerHTML = `<button class="back" id="back">← Back</button>
     <nav class="crumbs" aria-label="Product path">${crumbs}</nav>
-    <div><h2${code.length > 2 ? ` class="long" title="${esc(LABELS[code] || code)}"` : ""}>${code.length === 2 ? esc(labelOf(code)) : esc(LABELS[code] || code)}</h2><div class="sub">${LEVEL[code.length]} ${code} · ${flow === "Exports" ? "exports to" : "imports from"} ${esc(nm)} · ${S.measure === "value" ? "by value" : "by weight"}</div></div>
+    <div><h2${code.length > 2 ? ` class="long" title="${esc(LABELS[code] || code)}"` : ""}>${code.length === 2 ? esc(labelOf(code)) : esc(LABELS[code] || code)}</h2><div class="sub" title="${LEVEL_HELP}">${LEVEL[code.length]} · code ${code} · ${flow === "Exports" ? "exports to" : "imports from"} ${esc(nm)} · ${S.measure === "value" ? "by value" : "by weight"}</div></div>
     ${body}
     ${T && T.year !== yr ? `<p class="note">Product detail is for ${T.year}, the most detailed year prepared; the map shows ${yr}.</p>` : ""}`;
   $("back").onclick = goUp;
@@ -525,7 +529,7 @@ function drawDetail(cur) {
     ${S.flow === "Imports"
       ? `<section class="goods"><h3><i style="background:var(--imp)"></i>Luxembourg imports from ${esc(nm)}</h3>${goodsList(c, "Imports", yr)}</section>`
       : `<section class="goods"><h3><i style="background:var(--exp)"></i>Luxembourg exports to ${esc(nm)}</h3>${goodsList(c, "Exports", yr)}</section>`}
-    ${TREE[c] ? `<p class="note">Click a category for its top 5 products, then keep clicking to go down to 8-digit products (${TREE[c].year} detail).</p>` : `<p class="note">Product detail is prepared for the 40 largest partners only.</p>`}`;
+    ${TREE[c] ? `<p class="note">Click a category to see its product groups, then keep clicking for product types and specific products (${TREE[c].year} detail).</p>` : `<p class="note">Product detail is prepared for the 40 largest partners only.</p>`}`;
   $("back").onclick = () => select(null);
   wireMore(el, () => drawDetail(CUR));
   el.querySelectorAll("li.click").forEach(li => {
