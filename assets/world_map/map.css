@@ -211,3 +211,7 @@ select { font: 600 13px var(--font); color: var(--fg); background: var(--surface
 .pie-legend .pv { text-align: right; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 @media (max-width: 700px) { .pie-body { grid-template-columns: 1fr; } .pie-chart { max-width: 300px; margin: 0 auto; } }
 .goods li.click.leaf-item .gn::after { content: ""; }   /* specific products open the final level: no arrow */
+/* the panel never grows taller than the map: with ranks 6-25 open it scrolls */
+.panel { max-height: 540px; overflow-y: auto; padding-right: 4px; overscroll-behavior: contain; }
+#morep li { padding: 3px 0; }
+@media (max-width: 820px) { .panel { max-height: none; overflow: visible; } }

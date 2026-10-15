@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Luxembourg Beyond Its Borders</title>
+<title>Understanding Luxembourg's International Trade</title>
 <!--
   Static app: open this file directly (double-click) or host the folder as-is.
   Data comes from data/js/, built from data/derived/ by `node scripts/build-data.mjs`.
@@ -18,33 +18,35 @@
 </head>
 <body>
 <nav class="sections" aria-label="Sections">
-  <a href="#start" data-view="start" aria-current="true">Start</a>
+  <a href="#start" data-view="start" aria-current="true">Front page</a>
   <a href="#introduction" data-view="intro">Introduction</a>
   <a href="#world-map" data-view="map">World map</a>
   <a href="#comparison" data-view="cmp">Country comparison</a>
   <a href="#methodology" data-view="method">Methodology</a>
+  <a href="#end" data-view="end">End</a>
 </nav>
 
-<header id="start" class="hero" aria-label="Start">
+<header id="start" class="hero" aria-label="Front page">
   <div class="hero-inner">
     <p class="hero-kicker">Luxembourg's trade in goods, 1999–2026</p>
-    <h1 class="hero-title">Luxembourg Beyond Its Borders</h1>
-    <p class="hero-sub">Where Luxembourg's goods go, where its goods come from, and how one of Europe's smallest countries compares with the rest of the EU.</p>
+    <h1 class="hero-title">Understanding Luxembourg's International Trade</h1>
     <ul class="hero-people" aria-label="Team">
-      <li>Hicham Rahali</li>
       <li>Silvana Belegu</li>
-      <li>Monica</li>
+      <li>Monica Pereira Henriques</li>
+      <li>Hicham Rahali</li>
     </ul>
     <a class="hero-go" href="#introduction">Start exploring <span aria-hidden="true">↓</span></a>
   </div>
-  <p class="hero-credit">Photo: Grund, Luxembourg City, by Pierre Blaché (CC0, Wikimedia Commons)</p>
+  <p class="hero-credit">Illustration: Freepik</p>
 </header>
 
 <main class="content">
   <section id="introduction" class="view intro" aria-labelledby="intro-title">
-    <p class="intro-kicker">Understanding Luxembourg's International Trade</p>
-    <h2 id="intro-title">Three key questions to understand</h2>
-    <p class="intro-lead">The goal of our visualisations is to understand Luxembourg's trade more easily by exploring three key questions:</p>
+    <p class="intro-kicker">Introduction</p>
+    <figure class="intro-quote">
+      <blockquote><h2 id="intro-title">“Without data, you're just another person with an opinion.”</h2></blockquote>
+      <figcaption>— W. Edwards Deming</figcaption>
+    </figure>
     <div class="questions">
       <a class="question" href="#world-map" data-view="map">
         <h3>Trading partners?</h3>
@@ -183,7 +185,7 @@
         <h3>Trading partners (world map)</h3>
         <ul>
           <li>Stepping by <b>year</b> shows calendar-year totals (1999–2025). Stepping by <b>month</b> shows, for each month, the total of the 12 months up to and including it (to June 2026), so seasonal swings do not move the ranking.</li>
-          <li>Partners are ranked by that total; the five largest are highlighted and ranks 6–10 sit behind "show more".</li>
+          <li>Partners are ranked by that total; the five largest are highlighted and ranks 6–25 open with "show more".</li>
           <li>The trend chart for a selected country uses calendar-year totals.</li>
           <li>For trade inside the EU the partner is the member state the goods were shipped from or to, which can be a transit country such as Belgium or the Netherlands. For imports from outside the EU it is the country of origin.</li>
           <li>Partners Eurostat keeps confidential are counted in totals and rankings but cannot be placed on the map.</li>
@@ -216,9 +218,17 @@
         </ul>
       </article>
     </div>
-    <p class="method-foot">Data last retrieved from Eurostat on 14–15 October 2026. Start page photo: Grund, Luxembourg City, by Pierre Blaché (CC0, Wikimedia Commons).</p>
+    <p class="method-foot">Data last retrieved from Eurostat on 14–15 October 2026. Start page illustration: Freepik.</p>
   </section>
 </main>
+
+<footer id="end" class="outro" aria-labelledby="end-title">
+  <div class="outro-inner">
+    <p class="hero-kicker">Understanding Luxembourg's International Trade</p>
+    <h2 id="end-title" class="outro-title">See you next week!</h2>
+    <a class="hero-go" href="#start">Back to the front page <span aria-hidden="true">↑</span></a>
+  </div>
+</footer>
 
 <script src="assets/shared/iso_codes.js"></script>
 <script src="data/js/core.js"></script>

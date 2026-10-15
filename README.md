@@ -1,4 +1,4 @@
-# Luxembourg Beyond Its Borders
+# Understanding Luxembourg's International Trade
 
 A static JavaScript app about Luxembourg's trade in goods, built on Eurostat Comext data (1999–2026). One page holds two charts:
 
@@ -13,12 +13,12 @@ The folder can also be published as-is, for example on GitHub Pages.
 
 ## Project layout
 
-- `index.html`: one page: a start page (title, team, photo of Luxembourg City), an introduction with the three key questions, the world map, the country comparison and a methodology section, with a text navigation on the left that scrolls to each. The team names are in the `hero-people` list.
+- `index.html`: one page: a start page (title, team in alphabetical order, trade illustration), an introduction with the three key questions, the world map, the country comparison and a methodology section, with a text navigation on the left that scrolls to each. The team names are in the `hero-people` list.
 - `assets/world_map/`: world map (`map.js`, `map.css`).
 - `assets/country_comparison/`: country comparison (`comparison.js`, `comparison.css`).
 - `assets/shared/iso_codes.js`: country codes used to match trade partners to map shapes.
 - `assets/app.js`, `assets/app.css`: page layout and the left navigation (smooth scrolling, highlights the section in view). Links such as `index.html#comparison`, `#world-map` or `#introduction` open on that section.
-- `assets/img/luxembourg-grund.jpg`: start page photo, "Grund, Luxembourg City" by Pierre Blaché, CC0 (public domain), from [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Grund,_Luxembourg_City_(54540538196).jpg).
+- `assets/img/trade-illustration.jpg`: start page illustration (Freepik, "Hand drawn international trade illustration"). Free Freepik images require the credit shown on the start page. `luxembourg-grund.jpg` is the earlier start page photo, no longer used.
 - `data/derived/`: the prepared trade data (JSON), frozen.
 - `data/js/`: the same data bundled as script files so the page can load it from disk. `core.js` and `details.js` load with the page; `products/<HS2>.js` loads when that category is opened in the partner chart under the map.
 - `data/raw/`: inputs of the country comparison: `eu_trade_totals.json` (Eurostat Comext DS-045409, every reporter's trade with the world, all goods, imports and exports, value and weight, annual) and `wdi_population.csv` (World Bank World Development Indicators, SP.POP.TOTL, 1999–2025).

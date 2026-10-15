@@ -28,7 +28,8 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = path.join(ROOT, "data", "derived");
 const OUT = path.join(ROOT, "data", "js");
-const KEEP_PARTNERS = 10;   // partners per period sent to the map: 5 drawn, 6-10 behind "show more"
+const KEEP_PARTNERS = 25;   // partners per period for the map: 5 drawn, 6-25 behind "show more" (all that app_data ranks)
+const KEEP_PRODUCT_PARTNERS = 10;   // per category: the partner chart shows the top 7 and groups the rest
 const KEEP_CHILDREN = 20;   // product tree children per node
 const LABEL_MAX = 120;
 
@@ -45,11 +46,11 @@ const write = (f, global, data, key) => {
 const short = s => (s.length <= LABEL_MAX ? s : s.slice(0, LABEL_MAX - 1).replace(/[ ,;]+$/, "") + "…");
 
 // {measure: {flow: {frames, world, ...}}} -> {"measure|flow": {frames: top partners, world}}
-function slimSeries(blobs) {
+function slimSeries(blobs, keep = KEEP_PARTNERS) {
   const out = {};
   for (const [m, byFlow] of Object.entries(blobs))
     for (const [f, b] of Object.entries(byFlow))
-      out[`${m}|${f}`] = { frames: b.frames.map(fr => fr.slice(0, KEEP_PARTNERS)), world: b.world };
+      out[`${m}|${f}`] = { frames: b.frames.map(fr => fr.slice(0, keep)), world: b.world };
   return out;
 }
 
@@ -188,7 +189,7 @@ size += write("details.js", "LUX_DETAILS", { pp: pp.partners, ppYears: pp.years,
 let n = 0;
 for (const code of [...productFiles].sort()) {
   const p = read(path.join("products", `${code}.json`));
-  size += write(path.join("products", `${code}.js`), "LUX_PRODUCTS", slimSeries({ value: p.value, quantity: p.quantity }), code);
+  size += write(path.join("products", `${code}.js`), "LUX_PRODUCTS", slimSeries({ value: p.value, quantity: p.quantity }, KEEP_PRODUCT_PARTNERS), code);
   n++;
 }
 console.log(`data/js: core.js, details.js and ${n} product files, ${(size / 1e6).toFixed(1)} MB in total`);

@@ -204,7 +204,7 @@ function drawOverlay() {
 /* ---------- side panel ---------- */
 const ROW = 66;
 function drawMorePartners(cur) {
-  const el = $("morep"), extra = cur.all.slice(5, 10), open = OPEN.has("partners");
+  const el = $("morep"), extra = cur.all.slice(5), open = OPEN.has("partners");
   if (!extra.length) { el.innerHTML = ""; return; }
   const hv = d3.sum(extra, r => r[1]);
   el.innerHTML = (open ? `<ol start="6">${extra.map(([c, v], j) => `<li class="click" role="button" tabindex="0" data-code="${c}"><span class="rk">${j + 6}</span><span class="gn">${esc(name(c))}</span><span class="gv">${fmt(v)} <small style="color:var(--muted);font-weight:400">${cur.world ? (v / cur.world * 100).toFixed(1) + "%" : ""}</small></span></li>`).join("")}</ol>` : "") +
@@ -478,7 +478,7 @@ gLand.on("pointermove", ev => {
   const f = ev.target.__data__; if (!f) return;
   const code = CODE_OF.get(f.id);
   const rows = CUR.all, k = code ? rows.findIndex(r => r[0] === code) : -1;
-  tip.innerHTML = k >= 0 ? `<b>#${k + 1} ${name(code)}</b><br>${fmt(rows[k][1])}${CUR.world ? ` · ${(rows[k][1] / CUR.world * 100).toFixed(1)}%` : ""}<br><span class="m">Click for details</span>` : `<b>${code ? name(code) : f.properties.name}</b><br><span class="m">${f.id === "442" ? "Reporter" : code ? "Outside the top 10 · click for details" : "No trade recorded"}</span>`;
+  tip.innerHTML = k >= 0 ? `<b>#${k + 1} ${name(code)}</b><br>${fmt(rows[k][1])}${CUR.world ? ` · ${(rows[k][1] / CUR.world * 100).toFixed(1)}%` : ""}<br><span class="m">Click for details</span>` : `<b>${code ? name(code) : f.properties.name}</b><br><span class="m">${f.id === "442" ? "Reporter" : code ? "Outside the top 25 · click for details" : "No trade recorded"}</span>`;
   tip.hidden = false;
   const r = $("mapwrap").getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
   tip.style.left = Math.min(r.width - tip.offsetWidth - 8, x + 14) + "px"; tip.style.top = Math.max(8, y - 40) + "px";
