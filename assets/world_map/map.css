@@ -62,7 +62,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .label .badge-t { font-weight: 700; font-size: 12px; fill: #fff; }
 .leader { stroke: var(--fg-2); stroke-width: 1; opacity: .55; }
 .anchor { stroke: var(--surface); stroke-width: 1.5; }
-.luxdot { fill: var(--lux); stroke: var(--surface); stroke-width: 2; }
+.luxdot { fill: var(--lux); stroke: var(--surface); stroke-width: 1.5; }
+.luxpole { stroke: var(--lux); stroke-width: 1.6; stroke-linecap: round; }
+.luxflag { transform-box: fill-box; transform-origin: left center; animation: wave 2.6s ease-in-out infinite alternate; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / .25)); }
+.luxflag-edge { fill: none; stroke: rgb(0 0 0 / .25); stroke-width: .8; }
+@keyframes wave { from { transform: skewY(0deg) scaleX(1); } to { transform: skewY(-5deg) scaleX(.94); } }
 .luxring { fill: none; stroke: var(--lux); stroke-width: 1.5; opacity: .5; animation: pulse 2.2s ease-out infinite; transform-box: fill-box; transform-origin: center; }
 @keyframes pulse { from { transform: scale(.6); opacity: .7; } to { transform: scale(2.4); opacity: 0; } }
 .luxlbl { font-size: 12px; font-weight: 700; fill: var(--fg); paint-order: stroke; stroke: var(--sea); stroke-width: 3px; }
@@ -154,6 +158,56 @@ select { font: 600 13px var(--font); color: var(--fg); background: var(--surface
   .ctl { grid-column: 1 / -1; order: 3; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .flow-dash, .luxring { animation: none; }
+  .flow-dash, .luxring, .luxflag { animation: none; }
   .row, .country { transition: none; }
 }
+
+/* trend popup for the selected country */
+.trend { position: absolute; right: 12px; bottom: 12px; width: min(380px, calc(100% - 24px)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / .16); padding: 10px 12px 8px; z-index: 4; animation: trend-in .25s ease-out; }
+@keyframes trend-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.trend-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.trend-title { font-weight: 700; font-size: 14px; }
+.trend-sub { font-size: 12px; color: var(--muted); }
+.trend-close { border: 0; background: none; font-size: 20px; line-height: 1; color: var(--muted); cursor: pointer; padding: 0 4px; border-radius: 6px; }
+.trend-close:hover { color: var(--fg); background: var(--sea); }
+#trend-chart { display: block; width: 100%; height: 150px; }
+.trend-grid { stroke: var(--line); }
+.trend-tick { font-size: 10.5px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.trend-now { stroke: var(--fg-2); stroke-dasharray: 3 3; }
+.trend-hover line { stroke: var(--fg-2); }
+.trend-hover text { font-size: 11.5px; font-weight: 700; fill: var(--fg); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.trend-foot { font-size: 12.5px; color: var(--fg-2); display: flex; flex-wrap: wrap; gap: 2px 6px; align-items: baseline; }
+.trend-foot .up { color: var(--up); } .trend-foot .down { color: var(--down); }
+.trend-hint { flex-basis: 100%; font-size: 11.5px; color: var(--muted); }
+.detail-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (prefers-reduced-motion: reduce) { .trend { animation: none; } }
+
+/* month and year shown while hovering the timeline */
+.spark-tip { bottom: calc(100% + 6px); top: auto; font-weight: 700; padding: 4px 9px; }
+
+/* partner pie under the map (opened by clicking a category) */
+.pie { margin-top: 26px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); display: grid; gap: 12px; animation: trend-in .3s ease-out; }
+.pie-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.pie h2 { margin: 2px 0 0; font-size: 22px; line-height: 1.2; }
+.pie-sub { margin: 4px 0 0; color: var(--fg-2); font-size: 13.5px; max-width: 80ch; }
+.pie-body { display: grid; grid-template-columns: minmax(220px, 320px) minmax(0, 1fr); gap: 28px; align-items: center; }
+.pie-chart svg { display: block; width: 100%; height: auto; }
+.pie-slice { stroke: var(--surface); stroke-width: 1.5; transition: opacity .2s; }
+.pie-slice.sel { stroke: var(--fg); stroke-width: 2; }
+.pie-slice.dim { opacity: .25; }
+.pie-pct { font-size: 12.5px; font-weight: 700; fill: #fff; pointer-events: none; paint-order: stroke; stroke: rgb(0 0 0 / .25); stroke-width: 2px; }
+.pie-center { font-size: 26px; }
+.pie-center-v { font-size: 15px; font-weight: 700; fill: var(--fg); }
+.pie-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.pie-legend li { display: grid; grid-template-columns: 14px minmax(0, 1fr) 64px 84px; gap: 10px; align-items: center; padding: 6px 8px; border-radius: 8px; font-size: 14px; }
+.pie-legend li[data-c] { cursor: pointer; }
+.pie-legend li[data-c]:hover, .pie-legend li.sel { background: var(--sea); }
+.pie-legend li.sel .pl { font-weight: 700; }
+.pie-legend i { width: 14px; height: 14px; border-radius: 4px; }
+.pie-legend .pl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pie-legend .pl small { color: var(--muted); }
+.pie-legend b { text-align: right; font-variant-numeric: tabular-nums; }
+.pie-legend .pv { text-align: right; color: var(--muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+@media (max-width: 700px) { .pie-body { grid-template-columns: 1fr; } .pie-chart { max-width: 300px; margin: 0 auto; } }
+.goods li.click.leaf-item .gn::after { content: ""; }   /* specific products open the final level: no arrow */

@@ -1,15 +1,26 @@
-const DATA = /*__DATA__*/null;
+/* World map: Luxembourg's top 5 partners over time, with a click-through to each country's goods.
+   Reads the bundles written by scripts/build-data.mjs (window.LUX, window.LUX_DETAILS and, on demand,
+   window.LUX_PRODUCTS[code]). Wrapped in a function so it can share the page with other views. */
+(() => {
 const WORLD_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-50m.json";
 const LUX = [6.13, 49.61];
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const $ = id => document.getElementById(id);
+const CORE = window.LUX, DET = window.LUX_DETAILS || {};
 
-if (!DATA) {
-  $("loading").textContent = "No data: open output/top5_map.html (built by top5_map.py) or the World map tab of the app.";
-  throw new Error("no data");
+if (!CORE) {
+  $("loading").textContent = "No data found: run `node scripts/build-data.mjs` to create data/js/.";
+  return;
 }
+const DATA = {
+  frames: CORE.frames, series: CORE.total, product: "all goods", names: CORE.names, hs2: CORE.hs2,
+  pp: DET.pp || {}, ppYears: DET.ppYears || [], trees: DET.trees || {}, labels: DET.labels || {},
+  init: { measure: "value", flow: "Imports" }, ids: {},
+};
+new Set([...Object.keys(CORE.names), ...Object.keys(DATA.pp)]).forEach(c => { const n = window.ISO_CODES.numeric(c); if (n) DATA.ids[c] = n; });
+const mapActive = () => window.ActiveView === "map";   // set by assets/app.js
 
-const S = { flow: DATA.init.flow, measure: DATA.init.measure, step: "Yearly", speed: 1, pos: 0, playing: false, auto: true, focusKey: "", sel: null, chap: null };
+const S = { flow: DATA.init.flow, measure: DATA.init.measure, step: "Yearly", speed: 1, pos: 0, playing: false, auto: true, focusKey: "", sel: null, chap: null, trend: true, pie: null };
 const FR = DATA.frames;
 const ser = () => DATA.series[`${S.measure}|${S.flow}`];
 const name = c => DATA.names[c] || c;
@@ -22,21 +33,23 @@ function fmt(v) {   // value in million EUR, quantity in thousand tonnes
 const PP = DATA.pp || {}, HS2 = DATA.hs2 || {}, TREE = DATA.trees || {}, LABELS = DATA.labels || {};
 const CODE_OF = new Map(Object.entries(DATA.ids).map(([c, id]) => [id, c]));
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const periodLabel = f => `12 months to ${MON[+f.slice(5) - 1]} ${f.slice(0, 4)}`;
+// Each frame is a 12-month total. Stepping by year shows calendar years (December frames) labelled by
+// the year; stepping by month labels each frame by its last month.
+const periodLabel = f => S.step === "Yearly" ? f.slice(0, 4) : `${MON[+f.slice(5) - 1]} ${f.slice(0, 4)}`;
 
 /* ---------- frames for the chosen step ---------- */
 let IDX = [];
 function buildIdx() {
   const n = FR.length;
   IDX = FR.map((f, i) => i).filter(i => S.step === "Monthly" || FR[i].slice(5) === "12");
-  if (IDX[IDX.length - 1] !== n - 1) IDX.push(n - 1);
+  if (S.step === "Monthly" && IDX[IDX.length - 1] !== n - 1) IDX.push(n - 1);   // yearly: complete calendar years only
   $("scrub").max = IDX.length - 1;
-  $("t0").textContent = FR[IDX[0]].slice(0, 4); $("t1").textContent = periodLabel(FR[n - 1]).replace("12 months to ", "");
+  $("t0").textContent = FR[IDX[0]].slice(0, 4); $("t1").textContent = periodLabel(FR[IDX[IDX.length - 1]]);
 }
 const frame = () => IDX[S.pos];
 
 /* ---------- map ---------- */
-const svg = d3.select("#map"), gZoom = svg.append("g"), gLand = gZoom.append("g"), gOver = svg.append("g"), gFlows = gOver.append("g"), gDet = gOver.append("g"), gLux = gOver.append("g"), gLabels = gOver.append("g");
+const svg = d3.select("#map"), gZoom = svg.append("g"), gLand = gZoom.append("g"), gOver = svg.append("g"), gFlows = gOver.append("g"), gDet = gOver.append("g"), gLabels = gOver.append("g"), gLux = gOver.append("g");   // Luxembourg drawn last, on top
 let W = 800, H = 500, projection, path, features = [], byId = new Map(), mainPart = new Map(), view = d3.zoomIdentity;
 const zoom = d3.zoom().scaleExtent([1, 60])
   .on("start", ev => { if (ev.sourceEvent) { S.auto = false; $("fit").hidden = false; } })
@@ -74,7 +87,7 @@ function focus(cur, animate) {
   const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
   let [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
   const padX = 120, padY = 70;   // room for labels around the edge
-  const k = Math.max(1, Math.min(60, Math.min((W - 2 * padX) / Math.max(1, x1 - x0), (H - 2 * padY) / Math.max(1, y1 - y0))));
+  const k = pts.length === 1 ? 4 : Math.max(1, Math.min(60, Math.min((W - 2 * padX) / Math.max(1, x1 - x0), (H - 2 * padY) / Math.max(1, y1 - y0))));
   const t = d3.zoomIdentity.translate(W / 2, H / 2).scale(k).translate(-(x0 + x1) / 2, -(y0 + y1) / 2);
   const dur = animate ? Math.min(1100, 900 / S.speed + 200) : 0;
   svg.transition().duration(dur).ease(d3.easeCubicInOut).call(zoom.transform, t);
@@ -98,8 +111,21 @@ function drawLand(cur) {
 let CUR = null;
 const curve = (p, q) => { const mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2, dx = q[0] - p[0], dy = q[1] - p[1], len = Math.hypot(dx, dy) || 1, bend = Math.min(80, len * .22);
   return `M${p[0]},${p[1]} Q${mx - dy / len * bend},${my + dx / len * bend} ${q[0]},${q[1]}`; };
+// Luxembourg: a flag on a pole planted at the capital, with a pulsing ring at its foot
+const LU_FLAG = ["#ef3340", "#ffffff", "#00a3e0"];   // red, white, light blue
 function drawLux(lux) {
-  const lx = gLux.selectAll("g").data([0]).join(enter => { const g = enter.append("g"); g.append("circle").attr("class", "luxring").attr("r", 9); g.append("circle").attr("class", "luxdot").attr("r", 5.5); g.append("text").attr("class", "luxlbl").attr("x", 9).attr("y", -9).text("Luxembourg"); return g; });
+  const lx = gLux.selectAll("g.luxpin").data([0]).join(enter => {
+    const g = enter.append("g").attr("class", "luxpin");
+    g.append("circle").attr("class", "luxring").attr("r", 9);
+    g.append("line").attr("class", "luxpole").attr("x1", 0).attr("y1", 0).attr("x2", 0).attr("y2", -36);
+    const flag = g.append("g").attr("transform", "translate(0.8,-36)").append("g").attr("class", "luxflag");
+    LU_FLAG.forEach((c, k) => flag.append("rect").attr("y", k * 6).attr("width", 27).attr("height", 6).attr("fill", c));
+    flag.append("rect").attr("class", "luxflag-edge").attr("width", 27).attr("height", 18);
+    g.append("circle").attr("class", "luxdot").attr("r", 4);
+    g.append("text").attr("class", "luxlbl").attr("x", 33).attr("y", -23).text("Luxembourg");
+    g.append("title").text("Luxembourg");
+    return g;
+  });
   lx.attr("transform", `translate(${lux[0]},${lux[1]})`);
 }
 function drawDetailOverlay(lux) {
@@ -143,7 +169,7 @@ function drawOverlay() {
     return { d, w, h, x: d.a[0] + dx * 46 - w / 2, y: d.a[1] + dy * 40 - h / 2 };
   });
   // Luxembourg's own marker and name are a fixed obstacle the cards move around
-  const all = [...boxes, { fixed: true, x: lux[0] - 10, y: lux[1] - 24, w: 98, h: 34 }];
+  const all = [...boxes, { fixed: true, x: lux[0] - 10, y: lux[1] - 42, w: 112, h: 52 }];
   for (let it = 0; it < 80; it++) {
     let moved = false;
     for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
@@ -241,7 +267,7 @@ function goodsList(code, flow, yr) {
   const k = S.measure === "value" ? 1 : 2, total = e[0][k - 1];
   const rows = e[1].map(r => ({ c: r[0], v: r[k] })).filter(r => r.v > 0).sort((a, b) => b.v - a.v);
   if (!rows.length || !total) return `<p class="empty">Nothing recorded by ${S.measure === "value" ? "value" : "weight"} in ${yr}.</p>`;
-  const col = flow === "Exports" ? "var(--exp)" : "var(--imp)", can = !!TREE[code];
+  const col = flow === "Exports" ? "var(--exp)" : "var(--imp)", can = true;
   return rankedList(`${code}|${flow}|chapters`, rows, total, col, (r, j, max) => { const h = HS2[r.c] || {};
     return `<li title="${esc(h.full || h.name || r.c)}"${can ? ` class="click" role="button" tabindex="0" data-flow="${flow}" data-chap="${r.c}"` : ""}><span class="rk">${j + 1}</span><span class="gn"><small>${r.c}</small>${h.icon ? h.icon + " " : ""}${esc(h.name || "Chapter " + r.c)}</span><span class="gv">${fmt(r.v)} <small style="color:var(--muted);font-weight:400">${(r.v / total * 100).toFixed(0)}%</small></span><span class="gb"><i style="width:${(r.v / max * 100).toFixed(1)}%;background:${col}"></i></span></li>`; }, "categories");
 }
@@ -273,7 +299,7 @@ function drawChapter(cur) {
     const rows = kids.map(([c, v, sub]) => ({ c, v, sub })).filter(r => r.v > 0);
     body = `<div class="dk"><div class="wide"><div class="k">${esc(dir)} · ${T.year}</div><div class="v">${fmt(total)}</div>${code.length === 2 ? `<div class="n">${esc(h.full || h.name || "")}</div>` : ""}</div></div>` +
       (rows.length ? `<section class="goods"><h3><i style="background:${col}"></i>${LEVELS[kids[0][0].length]}</h3>${rankedList(`${c}|${flow}|${path.join(">")}`, rows, total, col, (r, j, max) =>
-        `<li class="prod${r.sub.length ? " click" : ""}"${r.sub.length ? ` role="button" tabindex="0" data-code="${r.c}"` : ""} title="${esc(LABELS[r.c] || r.c)}"><span class="rk">${j + 1}</span><span class="gn"><small>${r.c}</small>${esc(LABELS[r.c] || "Code " + r.c)}</span><span class="gv">${fmt(r.v)} <small style="color:var(--muted);font-weight:400">${total ? (r.v / total * 100).toFixed(0) : 0}%</small></span><span class="gb"><i style="width:${(r.v / max * 100).toFixed(1)}%;background:${col}"></i></span>${r.sub.length ? `<span class="leaf">Mainly ${r.sub[0][0]} · ${esc(LABELS[r.sub[0][0]] || "")}</span>` : ""}</li>`, "items")}</section>`
+        `<li class="prod click${r.sub.length ? "" : " leaf-item"}" role="button" tabindex="0" data-code="${r.c}" title="${esc(LABELS[r.c] || r.c)}"><span class="rk">${j + 1}</span><span class="gn"><small>${r.c}</small>${esc(LABELS[r.c] || "Code " + r.c)}</span><span class="gv">${fmt(r.v)} <small style="color:var(--muted);font-weight:400">${total ? (r.v / total * 100).toFixed(0) : 0}%</small></span><span class="gb"><i style="width:${(r.v / max * 100).toFixed(1)}%;background:${col}"></i></span>${r.sub.length ? `<span class="leaf">Mainly ${r.sub[0][0]} · ${esc(LABELS[r.sub[0][0]] || "")}</span>` : ""}</li>`, "items")}</section>`
         : `<p class="empty">This is the most detailed level available: a specific product (8-digit code).</p>`);
   }
   const yr = yearFor(cur.i).yr;
@@ -291,32 +317,85 @@ function drawChapter(cur) {
   });
 }
 function drawDetail(cur) {
+  queueMicrotask(() => drawPie(false));   // the partner chart follows every move in the product drill-down
   if (S.chap) { drawChapter(cur); return; }
   const c = S.sel, { yr, partial } = yearFor(cur.i), el = $("detail");
   const tot = fl => { const e = PP[c]?.[fl]?.[yr]; return e ? e[0][S.measure === "value" ? 0 : 1] : 0; };
   const ex = tot("Exports"), im = tot("Imports"), rx = rankIn("Exports", c, cur.i), ri = rankIn("Imports", c, cur.i);
   const nm = name(c), by = S.measure === "value" ? "by value" : "by weight";
   el.innerHTML = c === "LU" ? `<button class="back" id="back">← Top 5</button><h2>Luxembourg</h2><p class="empty">This is the reporter. Pick a partner country on the map.</p>` :
-    `<button class="back" id="back">← Top 5</button>
+    `<div class="detail-actions"><button class="back" id="back">← Top 5</button>${S.trend ? "" : `<button class="back" id="trend-open">📈 Trend over time</button>`}</div>
     <div><h2>${esc(nm)}</h2><div class="sub">Calendar year ${yr}${partial ? " (latest full year)" : ""} · ${by} · all goods</div></div>
     <div class="dk">
-      <div><div class="k">Imports from ${esc(nm)}</div><div class="v">${fmt(im)}</div><div class="n">${ri ? `#${ri} supplier, ${periodLabel(FR[cur.i]).replace("12 months to ", "year to ")}` : "&nbsp;"}</div></div>
-      <div><div class="k">Exports to ${esc(nm)}</div><div class="v">${fmt(ex)}</div><div class="n">${rx ? `#${rx} market, ${periodLabel(FR[cur.i]).replace("12 months to ", "year to ")}` : "&nbsp;"}</div></div>
+      <div><div class="k">Imports from ${esc(nm)}</div><div class="v">${fmt(im)}</div><div class="n">${ri ? `#${ri} supplier, ${periodLabel(FR[cur.i])}` : "&nbsp;"}</div></div>
+      <div><div class="k">Exports to ${esc(nm)}</div><div class="v">${fmt(ex)}</div><div class="n">${rx ? `#${rx} market, ${periodLabel(FR[cur.i])}` : "&nbsp;"}</div></div>
       ${S.measure === "value" ? `<div class="wide"><div class="k">Trade balance</div><div class="v" style="color:${ex - im >= 0 ? "var(--up)" : "var(--down)"}">${ex - im >= 0 ? "+" : "−"}${fmt(Math.abs(ex - im))}</div><div class="n">${ex - im >= 0 ? "Luxembourg sells more than it buys" : "Luxembourg buys more than it sells"}</div></div>` : ""}
     </div>
     ${S.flow === "Imports"
       ? `<section class="goods"><h3><i style="background:var(--imp)"></i>Luxembourg imports from ${esc(nm)}</h3>${goodsList(c, "Imports", yr)}</section>`
       : `<section class="goods"><h3><i style="background:var(--exp)"></i>Luxembourg exports to ${esc(nm)}</h3>${goodsList(c, "Exports", yr)}</section>`}
-    ${TREE[c] ? `<p class="note">Click a category to see its product groups, then keep clicking for product types and specific products (${TREE[c].year} detail).</p>` : `<p class="note">Product detail is prepared for the 40 largest partners only.</p>`}`;
+    ${TREE[c] ? `<p class="note">Click a category to see its product groups (keep clicking for product types and specific products), and, below the map, the countries Luxembourg ${S.flow === "Exports" ? "exports it to" : "imports it from"}.</p>` : `<p class="note">Click a category to see, below the map, the countries Luxembourg ${S.flow === "Exports" ? "exports it to" : "imports it from"}. Product detail is prepared for the 40 largest partners only.</p>`}`;
   $("back").onclick = () => select(null);
+  if ($("trend-open")) $("trend-open").onclick = () => { S.trend = true; drawDetail(CUR); drawTrend(); };
   wireMore(el, () => drawDetail(CUR));
   el.querySelectorAll("li.click").forEach(li => {
-    const open = () => { S.chap = { flow: li.dataset.flow, path: [li.dataset.chap] }; drawDetail(CUR); el.scrollTop = 0; };
+    const open = () => {
+      S.pie = li.dataset.chap;
+      if (TREE[c]) { S.chap = { flow: li.dataset.flow, path: [li.dataset.chap] }; drawDetail(CUR); el.scrollTop = 0; }
+      drawPie(true);
+    };
     li.onclick = open; li.onkeydown = e => { if (e.key === "Enter") open(); };
   });
 }
+/* ---------- trend popup: the selected flow with the selected country, per calendar year ---------- */
+function drawTrend() {
+  const box = $("trend"), c = S.sel;
+  const years = DATA.ppYears, k = S.measure === "value" ? 0 : 1;
+  const pts = c && c !== "LU" ? years.map(y => { const e = PP[c]?.[S.flow]?.[y]; return { y, v: e ? e[0][k] : 0 }; }) : [];
+  if (!S.trend || !pts.some(p => p.v > 0)) { box.hidden = true; return; }
+  box.hidden = false;
+  const nm = name(c), col = S.flow === "Exports" ? "var(--exp)" : "var(--imp)";
+  $("trend-title").textContent = S.flow === "Exports" ? `Exports to ${nm}` : `Imports from ${nm}`;
+  $("trend-sub").textContent = `Per calendar year, ${S.measure === "value" ? "value in €" : "weight in tonnes"} · all goods`;
+  const el = $("trend-chart"), w = el.clientWidth || 340, h = 150, m = { t: 12, r: 14, b: 22, l: 50 };
+  const x = d3.scaleLinear(d3.extent(pts, p => p.y), [m.l, w - m.r]);
+  const y = d3.scaleLinear([0, d3.max(pts, p => p.v) * 1.08 || 1], [h - m.b, m.t]).nice(4);
+  const svgT = d3.select(el).attr("viewBox", `0 0 ${w} ${h}`);
+  svgT.selectAll("*").remove();
+  y.ticks(4).forEach(t => {
+    svgT.append("line").attr("class", "trend-grid").attr("x1", m.l).attr("x2", w - m.r).attr("y1", y(t)).attr("y2", y(t));
+    svgT.append("text").attr("class", "trend-tick").attr("x", m.l - 6).attr("y", y(t) + 3.5).attr("text-anchor", "end").text(t === 0 ? "0" : fmt(t));
+  });
+  x.ticks(5).filter(t => Number.isInteger(t)).forEach(t => svgT.append("text").attr("class", "trend-tick").attr("x", x(t)).attr("y", h - 6).attr("text-anchor", "middle").text(t));
+  svgT.append("path").attr("d", d3.area().x(p => x(p.y)).y0(y(0)).y1(p => y(p.v)).curve(d3.curveMonotoneX)(pts)).attr("fill", col).attr("opacity", .14);
+  svgT.append("path").attr("d", d3.line().x(p => x(p.y)).y(p => y(p.v)).curve(d3.curveMonotoneX)(pts)).attr("fill", "none").attr("stroke", col).attr("stroke-width", 2.2);
+  // the year the map is showing
+  const cy = yearFor(frame()).yr, cp = pts.find(p => p.y === cy);
+  if (cp) {
+    svgT.append("line").attr("class", "trend-now").attr("x1", x(cy)).attr("x2", x(cy)).attr("y1", m.t).attr("y2", h - m.b);
+    svgT.append("circle").attr("cx", x(cy)).attr("cy", y(cp.v)).attr("r", 4.5).attr("fill", col).attr("stroke", "var(--surface)").attr("stroke-width", 2);
+  }
+  // hover readout; click jumps the map to that year
+  const hov = svgT.append("g").attr("class", "trend-hover").style("display", "none");
+  hov.append("line").attr("y1", m.t).attr("y2", h - m.b);
+  hov.append("circle").attr("r", 3.5).attr("fill", col);
+  const lab = hov.append("text").attr("y", m.t + 8);
+  const near = ev => { const yr = Math.round(x.invert(d3.pointer(ev)[0])); return pts.find(p => p.y === Math.max(years[0], Math.min(years[years.length - 1], yr))); };
+  svgT.append("rect").attr("x", m.l).attr("y", m.t).attr("width", w - m.l - m.r).attr("height", h - m.t - m.b).attr("fill", "transparent").style("cursor", "pointer")
+    .on("pointermove", ev => { const p = near(ev); hov.style("display", null); hov.select("line").attr("x1", x(p.y)).attr("x2", x(p.y)); hov.select("circle").attr("cx", x(p.y)).attr("cy", y(p.v));
+      lab.text(`${p.y}: ${fmt(p.v)}`).attr("x", x(p.y) > w * .6 ? x(p.y) - 6 : x(p.y) + 6).attr("text-anchor", x(p.y) > w * .6 ? "end" : "start"); })
+    .on("pointerleave", () => hov.style("display", "none"))
+    .on("click", ev => { const p = near(ev), k2 = IDX.findIndex(i => FR[i] === `${p.y}-12`); if (k2 >= 0) { stop(); S.pos = k2; update(true); } });
+  // summary: latest year, change over the period and peak
+  const last = pts[pts.length - 1], first = pts.find(p => p.v > 0), peak = pts.reduce((a, b) => (b.v > a.v ? b : a));
+  const chg = first && first.v ? (last.v / first.v - 1) * 100 : null;
+  $("trend-foot").innerHTML = `<b>${fmt(last.v)}</b> in ${last.y}` + (chg == null ? "" : ` · <span class="${chg >= 0 ? "up" : "down"}">${chg >= 0 ? "+" : "−"}${Math.abs(chg).toFixed(0)}%</span> since ${first.y}`) + ` · peak ${fmt(peak.v)} in ${peak.y}` +
+    `<span class="trend-hint">Click the chart to jump to a year</span>`;
+}
+$("trend-close").onclick = () => { S.trend = false; drawTrend(); if (S.sel) drawDetail(CUR); };
+
 function select(code) {
-  S.sel = code && code === S.sel ? null : code; S.chap = null;
+  S.sel = code && code === S.sel ? null : code; S.chap = null; S.trend = true; if (!S.sel) S.pie = null;
   const on = !!S.sel;
   $("detail").hidden = !on; $("topkpi").hidden = on; $("list").hidden = on; $("morep").hidden = on;
   document.querySelector(".main").classList.toggle("wide", on);
@@ -334,9 +413,25 @@ function drawSpark() {
   sp.append("path").attr("d", d3.area().x((d, k) => x(k)).y0(h - 2).y1(d => y(d))(xs)).attr("fill", "var(--line)");
   sp.append("path").attr("d", d3.area().x((d, k) => x(k)).y0(h - 2).y1(d => y(d))(t5)).attr("fill", "var(--r4)").attr("opacity", .55);
   sp.append("line").attr("id", "cur").attr("y1", 0).attr("y2", h).attr("stroke", "var(--fg)").attr("stroke-width", 1.5);
+  sp.append("line").attr("id", "spark-hover").attr("y1", 0).attr("y2", h).attr("stroke", "var(--fg-2)").attr("stroke-dasharray", "2 2").style("display", "none");
   sp.on("click", ev => { const [mx] = d3.pointer(ev); stop(); S.pos = Math.round(x.invert(mx)); update(true); });
-  el._x = x;
+  el._x = x; el._xs = xs; el._t5 = t5;
 }
+// Month and year under the pointer when hovering the timeline (mini chart or slider)
+(() => {
+  const track = document.querySelector(".track"), tipEl = $("spark-tip");
+  track.addEventListener("pointermove", ev => {
+    const el = $("spark"), x = el._x; if (!x) return;
+    const r = el.getBoundingClientRect(), mx = ev.clientX - r.left;
+    const k = Math.max(0, Math.min(IDX.length - 1, Math.round(x.invert(mx))));
+    d3.select("#spark-hover").style("display", null).attr("x1", x(k)).attr("x2", x(k));
+    tipEl.textContent = periodLabel(FR[IDX[k]]);
+    tipEl.hidden = false;
+    const tw = tipEl.offsetWidth, tr = track.getBoundingClientRect();
+    tipEl.style.left = Math.max(0, Math.min(tr.width - tw, (r.left - tr.left) + x(k) - tw / 2)) + "px";
+  });
+  track.addEventListener("pointerleave", () => { tipEl.hidden = true; d3.select("#spark-hover").style("display", "none"); });
+})();
 const moveSparkCursor = () => { const x = $("spark")._x; if (x) d3.select("#cur").attr("x1", x(S.pos)).attr("x2", x(S.pos)); };
 
 /* ---------- update ---------- */
@@ -350,8 +445,9 @@ function update(animate) {
   if (S.sel) drawDetail(cur); else drawPanel(cur);
   const key = S.sel ? "sel:" + S.sel : S.flow + S.measure + cur.top.map(d => d.c).sort().join();
   if (S.auto && key !== S.focusKey) { S.focusKey = key; S.sel ? focusCountry(S.sel, animate) : focus(cur, animate); } else drawOverlay();
+  drawTrend(); drawPie(false);
   const hidden = cur.top.filter(d => !d.id).map(d => name(d.c));
-  $("note").textContent = `${S.measure === "value" ? "Value" : "Weight"} of ${S.flow.toLowerCase()} over the previous 12 months. Source: Eurostat Comext DS-045409.` +
+  $("note").textContent = `${S.measure === "value" ? "Value" : "Weight"} of ${S.flow.toLowerCase()} ${S.step === "Yearly" ? "per calendar year" : "over the 12 months up to each month"}. Source: Eurostat Comext DS-045409.` +
     (hidden.length ? ` Not on the map: ${hidden.join(", ")}.` : "") + " Click a country for the goods traded with it; drag or scroll to explore.";
 }
 
@@ -373,8 +469,8 @@ $("scrub").oninput = e => { stop(); S.pos = +e.target.value; update(true); };
 $("speed").onchange = e => S.speed = +e.target.value;
 $("step").onchange = e => { const f = frame(); S.step = e.target.value; buildIdx(); S.pos = IDX.findIndex(i => i >= f); if (S.pos < 0) S.pos = IDX.length - 1; drawSpark(); update(false); };
 $("fit").onclick = () => { S.auto = true; S.focusKey = ""; $("fit").hidden = true; update(true); };
-document.addEventListener("keydown", e => { if (e.key !== "Escape" || !S.sel) return; if (S.chap) goUp(); else select(null); });
-document.addEventListener("keydown", e => { if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return; if (e.code === "Space") { e.preventDefault(); S.playing ? stop() : play(); } if (e.code === "ArrowRight") { stop(); S.pos = Math.min(IDX.length - 1, S.pos + 1); update(true); } if (e.code === "ArrowLeft") { stop(); S.pos = Math.max(0, S.pos - 1); update(true); } });
+document.addEventListener("keydown", e => { if (!mapActive() || e.key !== "Escape" || !S.sel) return; if (S.chap) goUp(); else if (S.trend && !$("trend").hidden) { S.trend = false; drawTrend(); drawDetail(CUR); } else select(null); });
+document.addEventListener("keydown", e => { if (!mapActive()) return; if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return; if (e.code === "Space") { e.preventDefault(); S.playing ? stop() : play(); } if (e.code === "ArrowRight") { stop(); S.pos = Math.min(IDX.length - 1, S.pos + 1); update(true); } if (e.code === "ArrowLeft") { stop(); S.pos = Math.max(0, S.pos - 1); update(true); } });
 
 // tooltip on any country
 const tip = $("tip");
@@ -389,6 +485,98 @@ gLand.on("pointermove", ev => {
 }).on("pointerleave", () => tip.hidden = true)
   .on("click", ev => { const f = ev.target.__data__; if (!f) return; select(CODE_OF.get(f.id) || null); });
 
+/* ---------- partner pie: who Luxembourg trades the clicked category with, in % of the category ---------- */
+// Categories (2 digits) use the bundled 12-month partner rankings. Deeper levels (product group,
+// type, specific product) are loaded from Eurostat for the calendar year shown on the map, all partners.
+const EUROSTAT = "https://ec.europa.eu/eurostat/api/comext/dissemination/statistics/1.0/data/DS-045409";
+const liveCache = new Map();
+function loadLive(code, flow, year) {   // -> {rows: [[partner, value, quantity]], world: [value, quantity]} in million € / thousand t
+  const key = `${code}|${flow}|${year}`;
+  if (!liveCache.has(key)) {
+    const q = new URLSearchParams([["format", "JSON"], ["reporter", "LU"], ["product", code], ["freq", "A"], ["time", String(year)],
+      ["flow", flow === "Imports" ? "1" : "2"], ["indicators", "VALUE_IN_EUROS"], ["indicators", "QUANTITY_IN_100KG"]]);
+    liveCache.set(key, fetch(`${EUROSTAT}?${q}`).then(r => r.json()).then(d => {
+      if (d.error) throw new Error("Eurostat returned no data for this product and year.");
+      const cat = Object.fromEntries(d.id.map(k => [k, d.dimension[k].category.index])), byPos = {};
+      Object.entries(cat.partner).forEach(([c, i]) => { byPos[i] = c; });
+      const out = {}, strides = d.size.map((_, j) => d.size.slice(j + 1).reduce((a, b) => a * b, 1));
+      const pj = d.id.indexOf("partner"), ij = d.id.indexOf("indicators");
+      Object.entries(d.value).forEach(([k, v]) => {
+        const n = +k, partner = byPos[Math.floor(n / strides[pj]) % d.size[pj]], ind = Object.keys(cat.indicators).find(x => cat.indicators[x] === Math.floor(n / strides[ij]) % d.size[ij]);
+        (out[partner] = out[partner] || [0, 0])[ind === "VALUE_IN_EUROS" ? 0 : 1] = ind === "VALUE_IN_EUROS" ? v / 1e6 : v / 1e4;
+      });
+      return { world: out.WORLD || [0, 0], rows: Object.entries(out).filter(([c]) => /^[A-Z]{2}$/.test(c)).map(([c, [v, qn]]) => [c, v, qn]) };
+    }).catch(err => { liveCache.delete(key); throw err; }));
+  }
+  return liveCache.get(key);
+}
+const pieName = c => /^Q[P-Z]$/.test(c) ? "Confidential or not specified" : name(c);
+function pieCode() { return S.chap && S.chap.flow === S.flow ? S.chap.path[S.chap.path.length - 1] : S.pie; }
+
+const PIE_COLOURS = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6"], PIE_OTHER = "#c3c2b7";
+function drawPie(reveal) {
+  const box = $("pie"), code = pieCode();
+  if (!code) { box.hidden = true; return; }
+  const deep = code.length > 2, yr = yearFor(frame()).yr, k = S.measure === "value" ? 1 : 2, verb = S.flow === "Exports" ? "exports" : "imports";
+  const what = code.length === 2 ? (HS2[code] ? HS2[code].name.toLowerCase() : "this category") : (LABELS[code] || `product ${code}`);
+  box.hidden = false;
+  $("pie-eyebrow").textContent = `${LEVEL[code.length]} ${code} · ${deep ? yr : periodLabel(FR[frame()])}`;
+  $("pie-title").textContent = S.flow === "Exports" ? `Where Luxembourg exports it to` : `Where Luxembourg imports it from`;
+  if (deep) { $("pie-sub").textContent = `${what} · loading from Eurostat…`; d3.select("#pie-chart").selectAll("*").remove(); $("pie-legend").innerHTML = ""; $("pie-note").textContent = ""; }
+  const source = deep ? loadLive(code, S.flow, yr).then(d => ({ rows: d.rows.map(r => [r[0], r[k]]), total: d.world[k - 1] }))
+    : loadProduct(code).then(series => { const s = series[`${S.measure}|${S.flow}`], i = frame(); return { rows: (s.frames[i] || []).map(r => [r[0], r[1]]), total: s.world[i] }; });
+  source.then(({ rows, total }) => {
+    if (pieCode() !== code) return;   // the user moved on meanwhile
+    rows = rows.filter(r => r[1] > 0).sort((a, b) => b[1] - a[1]);
+    $("pie-sub").textContent = `Share of each partner in Luxembourg's ${verb} of ${code.length === 2 ? (HS2[code] ? HS2[code].full : what) : what}, ${S.measure === "value" ? "by value" : "by weight"}. Total: ${fmt(total)}.`;
+    if (!rows.length || !total) {
+      d3.select("#pie-chart").selectAll("*").remove(); $("pie-legend").innerHTML = "";
+      $("pie-note").textContent = `No ${verb} of this product recorded ${deep ? "in " + yr : "in this period"}${S.measure === "quantity" ? " by weight" : ""}.`; return;
+    }
+    // the 7 largest partners, the selected country if it is further down, and everyone else as "Other"
+    const top = rows.slice(0, 7), sel = S.sel && !top.find(r => r[0] === S.sel) ? rows.find(r => r[0] === S.sel) : null;
+    const shown = sel ? [...top, sel] : top, rest = total - d3.sum(shown, r => r[1]);
+    const slices = shown.map(([c, v], j) => ({ c, v, label: pieName(c), col: j < 7 ? PIE_COLOURS[j] : PIE_COLOURS[6], rank: rows.findIndex(r => r[0] === c) + 1 }));
+    if (rest > total * 0.001) slices.push({ c: "", v: rest, label: "Other partners", col: PIE_OTHER });
+    const W = 300, R = 132, r0 = 72, svgP = d3.select("#pie-chart").attr("viewBox", `${-W / 2} ${-W / 2} ${W} ${W}`).attr("aria-label", $("pie-title").textContent);
+    svgP.selectAll("*").remove();
+    const arc = d3.arc().innerRadius(r0).outerRadius(d => d.data.c && d.data.c === S.sel ? R + 8 : R).padAngle(.012).cornerRadius(3);
+    const pie = d3.pie().sort(null).value(d => d.v)(slices);
+    const g = svgP.append("g").selectAll("path").data(pie).join("path").attr("d", arc).attr("fill", d => d.data.col)
+      .attr("class", d => "pie-slice" + (d.data.c && d.data.c === S.sel ? " sel" : "")).attr("data-c", d => d.data.c);
+    g.append("title").text(d => `${d.data.label}: ${(d.data.v / total * 100).toFixed(1)}% (${fmt(d.data.v)})`);
+    svgP.append("g").selectAll("text").data(pie.filter(d => d.data.v / total >= 0.05)).join("text").attr("class", "pie-pct")
+      .attr("transform", d => `translate(${d3.arc().innerRadius((r0 + R) / 2).outerRadius((r0 + R) / 2).centroid(d)})`).attr("text-anchor", "middle").attr("dy", ".35em")
+      .text(d => `${Math.round(d.data.v / total * 100)}%`);
+    svgP.append("text").attr("class", "pie-center").attr("text-anchor", "middle").attr("dy", "-.2em").text((HS2[code.slice(0, 2)] || {}).icon || "");
+    svgP.append("text").attr("class", "pie-center-v").attr("text-anchor", "middle").attr("dy", "1.1em").text(fmt(total));
+    $("pie-legend").innerHTML = slices.map(d => `<li${d.c && DATA.ids[d.c] ? ` data-c="${d.c}" class="${d.c === S.sel ? "sel" : ""}" role="button" tabindex="0" title="Show ${esc(d.label)} on the map"` : ""}>` +
+      `<i style="background:${d.col}"></i><span class="pl">${d.rank ? `<small>${d.rank}.</small> ` : ""}${esc(d.label)}</span><b>${(d.v / total * 100).toFixed(1)}%</b><span class="pv">${fmt(d.v)}</span></li>`).join("");
+    $("pie-legend").querySelectorAll("li[data-c]").forEach(li => {
+      const c = li.dataset.c, on = v => svgP.selectAll(".pie-slice").classed("dim", function () { return v && this.dataset.c !== c; });
+      li.onmouseenter = () => on(true); li.onmouseleave = () => on(false);
+      li.onclick = () => { if (c !== S.sel) select(c); }; li.onkeydown = e => { if (e.key === "Enter" && c !== S.sel) select(c); };
+    });
+    const selShare = S.sel && rows.find(r => r[0] === S.sel);
+    $("pie-note").textContent = (S.sel && S.sel !== "LU" ? (selShare ? `${name(S.sel)}: ${(selShare[1] / total * 100).toFixed(1)}% of the total, #${rows.indexOf(selShare) + 1} ${S.flow === "Exports" ? "destination" : "supplier"}. ` : `${name(S.sel)} is not ${deep ? "a partner" : "among the 10 largest partners"} for this product in this period. `) : "") +
+      (deep ? `Calendar year ${yr}, all partners, loaded live from Eurostat. ` : "") + "Follows the map's timeline, measure and the product you open. Click a partner to show it on the map.";
+    if (reveal) box.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+  }).catch(err => { if (pieCode() === code) { $("pie-sub").textContent = what; $("pie-note").textContent = `Could not load the partner shares: ${err.message}`; } });
+}
+$("pie-close").onclick = () => { S.pie = null; drawPie(false); };
+
+/* ---------- category data (one script per HS2 chapter, loaded on first use by the partner chart) ---------- */
+function loadProduct(code) {
+  if (code === "TOTAL") return Promise.resolve(CORE.total);
+  if (window.LUX_PRODUCTS && window.LUX_PRODUCTS[code]) return Promise.resolve(window.LUX_PRODUCTS[code]);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = `data/js/products/${code}.js`;
+    s.onload = () => resolve(window.LUX_PRODUCTS[code]);
+    s.onerror = () => reject(new Error(`Missing data/js/products/${code}.js`));
+    document.head.appendChild(s);
+  });
+}
 /* ---------- boot ---------- */
 $("eyebrow").textContent = `Luxembourg · ${DATA.product}`;
 buildIdx(); S.pos = IDX.length - 1;
@@ -400,3 +588,4 @@ d3.json(WORLD_URL).then(world => {
   resize(); drawSpark(); update(false);
   new ResizeObserver(() => { resize(); drawSpark(); S.focusKey = ""; update(false); }).observe($("mapwrap"));
 }).catch(() => { $("loading").textContent = "Could not load the world map (needs an internet connection to cdn.jsdelivr.net)."; });
+})();

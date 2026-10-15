@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luxembourg Beyond Its Borders</title>
+<!--
+  Static app: open this file directly (double-click) or host the folder as-is.
+  Data comes from data/js/, built from data/derived/ by `node scripts/build-data.mjs`.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="assets/world_map/map.css">
+<link rel="stylesheet" href="assets/country_comparison/comparison.css">
+<link rel="stylesheet" href="assets/app.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+</head>
+<body>
+<nav class="sections" aria-label="Sections">
+  <a href="#start" data-view="start" aria-current="true">Start</a>
+  <a href="#introduction" data-view="intro">Introduction</a>
+  <a href="#world-map" data-view="map">World map</a>
+  <a href="#comparison" data-view="cmp">Country comparison</a>
+  <a href="#methodology" data-view="method">Methodology</a>
+</nav>
+
+<header id="start" class="hero" aria-label="Start">
+  <div class="hero-inner">
+    <p class="hero-kicker">Luxembourg's trade in goods, 1999–2026</p>
+    <h1 class="hero-title">Luxembourg Beyond Its Borders</h1>
+    <p class="hero-sub">Where Luxembourg's goods go, where its goods come from, and how one of Europe's smallest countries compares with the rest of the EU.</p>
+    <ul class="hero-people" aria-label="Team">
+      <li>Hicham Rahali</li>
+      <li>Silvana Belegu</li>
+      <li>Monica</li>
+    </ul>
+    <a class="hero-go" href="#introduction">Start exploring <span aria-hidden="true">↓</span></a>
+  </div>
+  <p class="hero-credit">Photo: Grund, Luxembourg City, by Pierre Blaché (CC0, Wikimedia Commons)</p>
+</header>
+
+<main class="content">
+  <section id="introduction" class="view intro" aria-labelledby="intro-title">
+    <p class="intro-kicker">Understanding Luxembourg's International Trade</p>
+    <h2 id="intro-title">Three key questions to understand</h2>
+    <p class="intro-lead">The goal of our visualisations is to understand Luxembourg's trade more easily by exploring three key questions:</p>
+    <div class="questions">
+      <a class="question" href="#world-map" data-view="map">
+        <h3>Trading partners?</h3>
+        <p>Identify Luxembourg's main import and export partners and how these evolved over time.</p>
+        <span class="question-go">World map →</span>
+      </a>
+      <a class="question" href="#world-map" data-view="map">
+        <h3>What products?</h3>
+        <p>Explore which products Luxembourg trades with each partner, from broad categories to detailed products.</p>
+        <span class="question-go">World map, click a country →</span>
+      </a>
+      <a class="question" href="#comparison" data-view="cmp">
+        <h3>International comparison</h3>
+        <p>Compare Luxembourg's imports and exports per inhabitant with those of other countries.</p>
+        <span class="question-go">Country comparison →</span>
+      </a>
+    </div>
+  </section>
+
+  <section id="world-map" class="view" aria-label="World map">
+    <div class="app">
+      <header class="top">
+        <div>
+          <div class="eyebrow" id="eyebrow">Luxembourg · all goods</div>
+          <h1 id="title">Who buys the most from Luxembourg?</h1>
+        </div>
+        <div class="toggles">
+          <span class="seg" id="g-flow"><button data-v="Imports" aria-pressed="false">Imports</button><button data-v="Exports" aria-pressed="true">Exports</button></span>
+              <span class="seg" id="g-measure"><button data-v="value" aria-pressed="true">Value €</button><button data-v="quantity" aria-pressed="false">Weight t</button></span>
+        </div>
+      </header>
+
+      <div class="main">
+        <div class="mapwrap" id="mapwrap">
+          <svg id="map" role="img" aria-label="Map of Luxembourg's five largest trading partners"></svg>
+          <div class="period" id="period"></div>
+          <button class="fit" id="fit" hidden>Re-centre</button>
+          <div class="tip" id="tip" hidden></div>
+          <div class="trend" id="trend" role="dialog" aria-labelledby="trend-title" hidden>
+            <div class="trend-head">
+              <div><div class="trend-title" id="trend-title"></div><div class="trend-sub" id="trend-sub"></div></div>
+              <button class="trend-close" id="trend-close" aria-label="Close the trend chart">×</button>
+            </div>
+            <svg id="trend-chart" aria-hidden="true"></svg>
+            <div class="trend-foot" id="trend-foot"></div>
+          </div>
+          <div class="loading" id="loading">Loading map…</div>
+        </div>
+        <aside class="panel" aria-label="Top 5 partners or selected country">
+          <div class="detail" id="detail" hidden></div>
+          <div class="kpi" id="topkpi"><div class="k" id="kpi-k">Top 5 share of exports</div><div class="v" id="kpi-v">–</div><div class="n" id="kpi-n">&nbsp;</div></div>
+          <div class="list" id="list"></div>
+          <div class="goods" id="morep"></div>
+        </aside>
+      </div>
+
+      <div class="timeline">
+        <button class="play" id="play" aria-label="Play"><svg viewBox="0 0 24 24" id="ico"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+        <div class="ctl">
+          <select id="step" aria-label="Step"><option selected>Yearly</option><option>Monthly</option></select>
+          <select id="speed" aria-label="Speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select>
+        </div>
+        <div class="track">
+          <svg id="spark" aria-hidden="true"></svg>
+          <div class="tip spark-tip" id="spark-tip" hidden></div>
+          <input type="range" id="scrub" min="0" max="0" value="0" aria-label="Timeline">
+          <div class="ends"><span id="t0"></span><span id="t1"></span></div>
+        </div>
+      </div>
+      <p class="note" id="note"></p>
+      <section class="pie" id="pie" aria-labelledby="pie-title" hidden>
+        <div class="pie-head">
+          <div><div class="eyebrow" id="pie-eyebrow"></div><h2 id="pie-title"></h2><p class="pie-sub" id="pie-sub"></p></div>
+          <button class="trend-close" id="pie-close" aria-label="Close the partner chart">×</button>
+        </div>
+        <div class="pie-body">
+          <div class="pie-chart"><svg id="pie-chart" role="img"></svg></div>
+          <ol class="pie-legend" id="pie-legend"></ol>
+        </div>
+        <p class="note" id="pie-note"></p>
+      </section>
+    </div>
+  </section>
+
+  <section id="comparison" class="view" aria-label="Country comparison">
+    <div class="cmp">
+      <header class="top">
+        <div>
+          <div class="eyebrow">Imports and exports per inhabitant · EU countries and the United Kingdom</div>
+          <h1>How much does each country trade per inhabitant?</h1>
+        </div>
+        <div class="toggles">
+          <span class="seg" id="cmp-measure"><button data-v="value" aria-pressed="true">Value €</button><button data-v="quantity" aria-pressed="false">Weight t</button></span>
+        </div>
+      </header>
+      <div class="timeline">
+        <button class="play" id="cmp-play" aria-label="Play"><svg viewBox="0 0 24 24" id="cmp-ico"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+        <div class="ctl">
+          <span class="cmp-year" id="cmp-year"></span>
+          <select id="cmp-speed" aria-label="Speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select>
+        </div>
+        <div class="track">
+          <input type="range" id="cmp-scrub" min="0" max="0" value="0" aria-label="Year">
+          <div class="ends"><span id="cmp-t0"></span><span id="cmp-t1"></span></div>
+        </div>
+      </div>
+      <div class="cmp-card">
+        <div id="cmp-chart"></div>
+        <div class="tip" id="cmp-tip" hidden></div>
+      </div>
+      <p class="note">Per inhabitant = a reporter's imports (or exports) of goods with the whole world in a year, divided by its population that year. Countries are ranked by imports per inhabitant; Luxembourg is pinned to the top row, and the number before each other country is its rank. Dashed lines mark the EU27 level (the sum of the 27 members' trade divided by their population). The United Kingdom reports until 2019. Goods only, not services. Sources: Eurostat Comext DS-045409 (EU trade since 1988), World Bank World Development Indicators (SP.POP.TOTL).</p>
+    </div>
+  </section>
+
+  <section id="methodology" class="view method" aria-labelledby="method-title">
+    <p class="intro-kicker">Methodology</p>
+    <h2 id="method-title">How the figures are made</h2>
+    <div class="method-grid">
+      <article>
+        <h3>Data sources</h3>
+        <ul>
+          <li><b>Trade:</b> Eurostat, EU trade since 1988 by HS2-4-6 and CN8 (Comext, DS-045409). Luxembourg as reporter, all partner countries, monthly and annual, 1999 to mid-2026.</li>
+          <li><b>Trade of other countries:</b> the same dataset, each reporter's trade with the whole world, all goods, annual.</li>
+          <li><b>Population:</b> World Bank, World Development Indicators, population total (SP.POP.TOTL), 1999–2025.</li>
+        </ul>
+      </article>
+      <article>
+        <h3>Measures</h3>
+        <ul>
+          <li><b>Value</b> in euros at current prices, not adjusted for inflation.</li>
+          <li><b>Weight</b> in tonnes (Eurostat reports units of 100 kg).</li>
+          <li><b>Goods only.</b> Trade in services, such as finance, is not included.</li>
+        </ul>
+      </article>
+      <article>
+        <h3>Trading partners (world map)</h3>
+        <ul>
+          <li>Stepping by <b>year</b> shows calendar-year totals (1999–2025). Stepping by <b>month</b> shows, for each month, the total of the 12 months up to and including it (to June 2026), so seasonal swings do not move the ranking.</li>
+          <li>Partners are ranked by that total; the five largest are highlighted and ranks 6–10 sit behind "show more".</li>
+          <li>The trend chart for a selected country uses calendar-year totals.</li>
+          <li>For trade inside the EU the partner is the member state the goods were shipped from or to, which can be a transit country such as Belgium or the Netherlands. For imports from outside the EU it is the country of origin.</li>
+          <li>Partners Eurostat keeps confidential are counted in totals and rankings but cannot be placed on the map.</li>
+        </ul>
+      </article>
+      <article>
+        <h3>Products (world map, click a country)</h3>
+        <ul>
+          <li>Products follow the customs nomenclature, which gets more specific with each pair of digits: <b>category</b> (2 digits, HS chapter), <b>product group</b> (4), <b>product type</b> (6) and <b>specific product</b> (8, EU CN code).</li>
+          <li>Categories for each country are given per calendar year from 1999 to 2025.</li>
+          <li>The deeper levels are prepared for the 40 largest partners, for 2025. Very small items are grouped as "not itemised".</li>
+          <li>The partner chart under the map shows each country's share of Luxembourg's imports (or exports) of the product you open. For a category it uses the same period as the map; for product groups, product types and specific products it loads the calendar year shown on the map from the Eurostat API, covering all partners. The seven largest partners are shown separately and the rest as "other partners".</li>
+        </ul>
+      </article>
+      <article>
+        <h3>International comparison</h3>
+        <ul>
+          <li><b>Imports per inhabitant</b> = a country's imports of goods from the whole world in a year ÷ its population that year. Exports per inhabitant are computed the same way.</li>
+          <li>Countries are the 27 EU member states and the United Kingdom, which reports until 2019.</li>
+          <li>The <b>EU27 reference</b> (dashed lines) is the sum of the 27 members' trade divided by the sum of their populations.</li>
+          <li>Countries are ranked by imports per inhabitant; Luxembourg is pinned to the top row.</li>
+        </ul>
+      </article>
+      <article>
+        <h3>Limits</h3>
+        <ul>
+          <li>A country's trade includes goods passing through on their way elsewhere, which inflates the figures for logistics hubs such as Belgium, the Netherlands and Luxembourg.</li>
+          <li>Totals for imports and exports within the EU are reported separately by each country and do not always match the partner's figures.</li>
+          <li>The latest months are provisional and may be revised by Eurostat.</li>
+        </ul>
+      </article>
+    </div>
+    <p class="method-foot">Data last retrieved from Eurostat on 14–15 October 2026. Start page photo: Grund, Luxembourg City, by Pierre Blaché (CC0, Wikimedia Commons).</p>
+  </section>
+</main>
+
+<script src="assets/shared/iso_codes.js"></script>
+<script src="data/js/core.js"></script>
+<script src="data/js/details.js"></script>
+<script src="assets/world_map/map.js"></script>
+<script src="assets/country_comparison/comparison.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

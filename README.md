@@ -1,69 +1,51 @@
-# Luxembourg Trade Explorer
+# Luxembourg Beyond Its Borders
 
-Streamlit dashboard and analysis scripts for Luxembourg's goods trade. The data workflow is split into four steps:
+A static JavaScript app about Luxembourg's trade in goods, built on Eurostat Comext data (1999–2026). One page holds two charts:
 
-```text
-Eurostat API -> data/raw -> data/processed -> data/derived -> app.py
-```
+- **World map**: Luxembourg's five largest trading partners over time, with the map zooming to them. Click a country to see the goods traded with it, then keep clicking to go from categories down to specific products.
+- **Country comparison**: imports and exports per inhabitant for the 32 reporters of Eurostat's EU trade dataset (the 27 EU countries, the United Kingdom and 4 country groups), year by year, with Luxembourg pinned on top.
 
-## Project Layout
+## Run
 
-- `scripts/ingestion/`: commands that download Eurostat source data and cache API responses.
-- `src/ingestion/`: reusable Eurostat API client and parsing code.
-- `scripts/processing/`: commands that clean, aggregate, and build datasets used by the app.
-- `src/processing/`: reusable trade transformations, including partner product trees.
-- `scripts/visualization/`: commands that create standalone charts or export the world map.
-- `src/visualization/pages/`: Streamlit tab renderers.
-- `src/visualization/charts/`: shared Plotly and Matplotlib chart helpers.
-- `src/visualization/world_map/`: Python data adapter and country-code mapping for the D3 map.
-- `assets/world_map/`: map HTML shell, JavaScript, and CSS.
-- `data/raw/`: downloaded API responses and other source snapshots.
-- `data/processed/`: normalized annual and monthly trade tables.
-- `data/derived/`: app-ready JSON and generated visualizations.
+Open `index.html` in a browser (double-click it). No server, build tool or install is needed. The page loads D3, the world map outlines and a font from public CDNs, so it needs an internet connection.
 
-`app.py` is the Streamlit entry point. It loads page renderers from `src/visualization/` and reads prepared data from `data/derived/`.
+The folder can also be published as-is, for example on GitHub Pages.
 
-## Setup
+## Project layout
 
-Use Python 3.13 and install the pinned project dependencies:
+- `index.html`: one page: a start page (title, team, photo of Luxembourg City), an introduction with the three key questions, the world map, the country comparison and a methodology section, with a text navigation on the left that scrolls to each. The team names are in the `hero-people` list.
+- `assets/world_map/`: world map (`map.js`, `map.css`).
+- `assets/country_comparison/`: country comparison (`comparison.js`, `comparison.css`).
+- `assets/shared/iso_codes.js`: country codes used to match trade partners to map shapes.
+- `assets/app.js`, `assets/app.css`: page layout and the left navigation (smooth scrolling, highlights the section in view). Links such as `index.html#comparison`, `#world-map` or `#introduction` open on that section.
+- `assets/img/luxembourg-grund.jpg`: start page photo, "Grund, Luxembourg City" by Pierre Blaché, CC0 (public domain), from [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Grund,_Luxembourg_City_(54540538196).jpg).
+- `data/derived/`: the prepared trade data (JSON), frozen.
+- `data/js/`: the same data bundled as script files so the page can load it from disk. `core.js` and `details.js` load with the page; `products/<HS2>.js` loads when that category is opened in the partner chart under the map.
+- `data/raw/`: inputs of the country comparison: `eu_trade_totals.json` (Eurostat Comext DS-045409, every reporter's trade with the world, all goods, imports and exports, value and weight, annual) and `wdi_population.csv` (World Bank World Development Indicators, SP.POP.TOTL, 1999–2025).
+- `scripts/build-data.mjs`: rebuilds `data/js/` from `data/derived/` and `data/raw/`, and writes `data/derived/trade_per_inhabitant.csv`.
 
-```bash
-python -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
-```
+## Data
 
-## Build Data
+The data is frozen. The Python pipeline that downloaded it from Eurostat (`DS-045409` and related datasets) and prepared `data/derived/` has been removed; it is still in the git history if the data ever needs refreshing.
 
-Run commands from the repository root. Downloads are cached under `data/raw/`; rerunning a download reuses cached responses.
+### Trade per inhabitant
+
+For each reporter and year: imports per inhabitant = imports ÷ population, and exports per inhabitant = exports ÷ population, both by value (€) and by weight (tonnes). The four country groups in the dataset (EU, EU27_2020, euro area, euro area 21) have no trade with the world in Comext, so their trade and population are the sums of their member countries in that year; "members at the time" follows the accession dates in Eurostat's reporter labels. The United Kingdom reports until 2019. The full table is in `data/derived/trade_per_inhabitant.csv`.
+
+To refresh the trade totals, download the same query again into `data/raw/eu_trade_totals.json`:
 
 ```bash
-.venv/bin/python -m scripts.ingestion.download_eurostat
-.venv/bin/python -m scripts.ingestion.download_partner_detail
-.venv/bin/python -m scripts.ingestion.download_country_totals
-.venv/bin/python -m scripts.ingestion.download_transport
-
-.venv/bin/python -m scripts.processing.build_race_page
-.venv/bin/python -m scripts.processing.build_transport_data
-.venv/bin/python -m scripts.processing.build_seasonality_data
-.venv/bin/python -m scripts.processing.build_partner_products
+curl -G "https://ec.europa.eu/eurostat/api/comext/dissemination/statistics/1.0/data/DS-045409" \
+  --data-urlencode format=JSON -d partner=WORLD -d product=TOTAL -d freq=A -d sinceTimePeriod=1999 \
+  -d flow=1 -d flow=2 -d indicators=VALUE_IN_EUROS -d indicators=QUANTITY_IN_100KG -o data/raw/eu_trade_totals.json
 ```
 
-The first command writes annual and monthly tables to `data/processed/`. The processing commands create the dashboard inputs under `data/derived/`. To refresh source data, remove the corresponding cache directory under `data/raw/` and rerun its ingestion command.
+### Rebuilding
 
-Optional exports:
+If anything in `data/derived/` or `data/raw/` changes, rebuild the bundles with Node.js 18 or later:
 
 ```bash
-.venv/bin/python -m pip install -r requirements-optional.txt
-.venv/bin/python -m scripts.processing.export_excel
-.venv/bin/python -m scripts.visualization.trade_partners
-.venv/bin/python -m scripts.visualization.top20_quantity
-.venv/bin/python -m scripts.visualization.export_world_map
+node scripts/build-data.mjs
 ```
 
-## Run The App
-
-```bash
-.venv/bin/streamlit run app.py
-```
-
-The dashboard uses prepared partner detail when available. For a partner without a prepared detail file, the partner detail view queries Eurostat live.
+`data/derived/seasonality.json` and `data/derived/transport_data.json` are not used by the current views.
