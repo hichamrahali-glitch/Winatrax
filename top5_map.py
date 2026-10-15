@@ -8,7 +8,7 @@ Data: the per-period partner rankings already prepared for the race charts
 period are sent to the page: 5 are mapped, ranks 6-10 show up in the hover text.
 Clicking a country shows its main HS2 chapters from output/partner_products.json
 (src/ranking_charts/10_build_partner_products.py); without that file the click view
-shows totals only. Clicking a chapter there opens its top 5 products, and each product
+shows totals only. Clicking a chapter there opens its main products, and each product
 can be opened further (HS4 > HS6 > CN8), from the prepared partner trees in
 output/partners/<code>.json (40 partners, one year).
 """
@@ -36,8 +36,9 @@ def short(label, n=120):
     return label if len(label) <= n else label[:n - 1].rstrip(" ,;") + "…"
 
 
-def load_product_detail(top=5):
-    """Product trees of the prepared partners, cut to the top items at every level:
+def load_product_detail(top=20):
+    """Product trees of the prepared partners (already limited to the main items at every level
+    when they were built), up to `top` children per node:
     {"partners": {code: {"year", "m": {"measure|flow": {hs2: node}}}}, "labels": {code: text}},
     node = [code, amount, [child nodes]] going HS2 > HS4 > HS6 > CN8. Labels are shared
     across partners (the same CN8 text appears for many of them)."""

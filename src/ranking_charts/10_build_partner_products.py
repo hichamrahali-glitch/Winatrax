@@ -5,7 +5,7 @@ Input : data/processed/lu_trade_hs2_annual.csv.gz (written by 00_download_eurost
 Output: output/partner_products.json
         {"years": [1999, ...],
          "partners": {code: {"Exports"|"Imports": {year: [[total_value, total_qty], [[hs2, value, qty], ...]]}}}}
-        Chapters kept per partner/flow/year: the 10 largest by value plus the 10 largest by
+        Chapters kept per partner/flow/year: the 20 largest by value plus the 20 largest by
         weight (the page re-ranks by the chosen measure); totals cover every chapter, so the
         page can show what share the listed chapters leave as "other".
         Value in million EUR, quantity in thousand tonnes (same units as app_data.json).
@@ -22,7 +22,7 @@ import pandas as pd
 SRC = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("data/processed/lu_trade_hs2_annual.csv.gz")
 OUT = Path("output/partner_products.json")
 FLOWS = {"Import": "Imports", "Export": "Exports"}
-KEEP = 10
+KEEP = 20
 
 
 def dumps(obj):

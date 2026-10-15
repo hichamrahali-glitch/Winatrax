@@ -140,6 +140,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px s
 .crumb:hover { text-decoration: underline; }
 .crumb.now { color: var(--fg); font-weight: 700; cursor: default; }
 .crumbs .sep { color: var(--muted); }
+button.more { justify-self: start; margin-top: 6px; font: 600 12.5px var(--font); color: var(--fg-2); background: var(--surface); border: 1px dashed var(--line); border-radius: 8px; padding: 4px 10px; cursor: pointer; }
+button.more:hover { border-color: var(--fg-2); color: var(--fg); }
+.goods ol + ol { margin-top: 5px; }
+#morep li { grid-template-columns: 18px minmax(0, 1fr) auto; }
 .goods .other { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .empty { color: var(--muted); font-size: 13px; }
 .row { cursor: pointer; }
@@ -196,6 +200,7 @@ select { font: 600 13px var(--font); color: var(--fg); background: var(--surface
       <div class="detail" id="detail" hidden></div>
       <div class="kpi" id="topkpi"><div class="k" id="kpi-k">Top 5 share of exports</div><div class="v" id="kpi-v">–</div><div class="n" id="kpi-n">&nbsp;</div></div>
       <div class="list" id="list"></div>
+      <div class="goods" id="morep"></div>
     </aside>
   </div>
 
@@ -327,7 +332,7 @@ function drawDetailOverlay(lux) {
   const a = view.apply(path.centroid(f)), yr = yearFor(frame()).yr;
   const tot = fl => { const e = PP[S.sel]?.[fl]?.[yr]; return e ? e[0][S.measure === "value" ? 0 : 1] : 0; };
   const ex = tot("Exports"), im = tot("Imports"), mx = Math.max(ex, im) || 1;
-  const arcs = [{ k: "exp", d: curve(lux, a), v: ex }, { k: "imp", d: curve(a, lux), v: im }].filter(r => r.v > 0);
+  const arcs = (S.flow === "Exports" ? [{ k: "exp", d: curve(lux, a), v: ex }] : [{ k: "imp", d: curve(a, lux), v: im }]).filter(r => r.v > 0);
   const g = gDet.selectAll("g.flow").data(arcs, r => r.k).join(enter => { const e = enter.append("g").attr("class", "flow"); e.append("path").attr("class", r => "flow-base " + r.k); e.append("path").attr("class", r => "flow-dash " + r.k); return e; });
   g.select(".flow-base").attr("d", r => r.d).attr("stroke-width", r => 2 + 7 * Math.sqrt(r.v / mx));
   g.select(".flow-dash").attr("d", r => r.d).attr("stroke-width", r => Math.max(2, (2 + 7 * Math.sqrt(r.v / mx)) * .6));
@@ -394,7 +399,17 @@ function drawOverlay() {
 
 /* ---------- side panel ---------- */
 const ROW = 66;
+function drawMorePartners(cur) {
+  const el = $("morep"), extra = cur.all.slice(5, 10), open = OPEN.has("partners");
+  if (!extra.length) { el.innerHTML = ""; return; }
+  const hv = d3.sum(extra, r => r[1]);
+  el.innerHTML = (open ? `<ol start="6">${extra.map(([c, v], j) => `<li class="click" role="button" tabindex="0" data-code="${c}"><span class="rk">${j + 6}</span><span class="gn">${esc(name(c))}</span><span class="gv">${fmt(v)} <small style="color:var(--muted);font-weight:400">${cur.world ? (v / cur.world * 100).toFixed(1) + "%" : ""}</small></span></li>`).join("")}</ol>` : "") +
+    `<button class="more" data-key="partners" aria-expanded="${open}">${open ? "Show top 5 only" : `⋯ Ranks 6–${5 + extra.length} · ${fmt(hv)}${cur.world ? ` (${(hv / cur.world * 100).toFixed(0)}%)` : ""}`}</button>`;
+  wireMore(el, () => drawMorePartners(CUR));
+  el.querySelectorAll("li.click").forEach(li => { li.onclick = () => select(li.dataset.code); li.onkeydown = e => { if (e.key === "Enter") select(li.dataset.code); }; });
+}
 function drawPanel(cur) {
+  drawMorePartners(cur);
   const s = ser(), share = cur.world ? d3.sum(cur.top, d => d.v) / cur.world : null;
   $("kpi-k").textContent = `Top 5 share of ${S.flow.toLowerCase()}`;
   $("kpi-v").textContent = share == null ? "–" : `${(share * 100).toFixed(0)}%`;
@@ -427,16 +442,30 @@ function rankIn(flow, code, i) {
   const fr = DATA.series[`${S.measure}|${flow}`].frames[i] || [], k = fr.findIndex(r => r[0] === code);
   return k >= 0 ? k + 1 : null;
 }
+// Ranked lists show the top 5; the rest sits behind a "⋯" button (open state kept per list).
+const OPEN = new Set();
+function rankedList(key, rows, total, col, rowHtml, noun) {
+  const first = rows.slice(0, 5), more = rows.slice(5), open = OPEN.has(key), max = rows.length ? rows[0].v : 1;
+  const li = (r, j) => rowHtml(r, j, max);
+  const listed = d3.sum(rows, r => r.v), rest = total - listed, hiddenV = d3.sum(more, r => r.v);
+  return `<ol>${first.map(li).join("")}</ol>` +
+    (more.length ? (open ? `<ol>${more.map((r, j) => li(r, j + 5)).join("")}</ol>` : "") +
+      `<button class="more" data-key="${esc(key)}" aria-expanded="${open}">${open ? "Show top 5 only" : `⋯ ${more.length} more ${more.length === 1 ? { categories: "category", items: "item" }[noun] || noun : noun}${total ? ` · ${fmt(hiddenV)} (${(hiddenV / total * 100).toFixed(0)}%)` : ""}`}</button>` : "") +
+    ((open || !more.length) && rest > total * 0.005 ? `<div class="other">Not itemised: ${fmt(rest)} (${(rest / total * 100).toFixed(0)}%)</div>` : "");
+}
+function wireMore(root, redraw) {
+  root.querySelectorAll("button.more").forEach(b => b.onclick = () => { const k = b.dataset.key; OPEN.has(k) ? OPEN.delete(k) : OPEN.add(k); redraw(); });
+}
+
 function goodsList(code, flow, yr) {
   const e = PP[code]?.[flow]?.[yr];
   if (!e) return `<p class="empty">No ${flow === "Exports" ? "exports" : "imports"} recorded in ${yr}.</p>`;
   const k = S.measure === "value" ? 1 : 2, total = e[0][k - 1];
-  const rows = e[1].map(r => ({ c: r[0], v: r[k] })).filter(r => r.v > 0).sort((a, b) => b.v - a.v).slice(0, 5);
+  const rows = e[1].map(r => ({ c: r[0], v: r[k] })).filter(r => r.v > 0).sort((a, b) => b.v - a.v);
   if (!rows.length || !total) return `<p class="empty">Nothing recorded by ${S.measure === "value" ? "value" : "weight"} in ${yr}.</p>`;
-  const col = flow === "Exports" ? "var(--exp)" : "var(--imp)", max = rows[0].v, rest = total - d3.sum(rows, r => r.v);
-  const can = !!TREE[code];
-  return `<ol>${rows.map((r, j) => { const h = HS2[r.c] || {}; return `<li title="${esc(h.full || h.name || r.c)}"${can ? ` class="click" role="button" tabindex="0" data-flow="${flow}" data-chap="${r.c}"` : ""}><span class="rk">${j + 1}</span><span class="gn"><small>${r.c}</small>${h.icon ? h.icon + " " : ""}${esc(h.name || "Chapter " + r.c)}</span><span class="gv">${fmt(r.v)} <small style="color:var(--muted);font-weight:400">${(r.v / total * 100).toFixed(0)}%</small></span><span class="gb"><i style="width:${(r.v / max * 100).toFixed(1)}%;background:${col}"></i></span></li>`; }).join("")}</ol>` +
-    (rest > total * 0.005 ? `<div class="other">Other chapters: ${fmt(rest)} (${(rest / total * 100).toFixed(0)}%)</div>` : "");
+  const col = flow === "Exports" ? "var(--exp)" : "var(--imp)", can = !!TREE[code];
+  return rankedList(`${code}|${flow}|chapters`, rows, total, col, (r, j, max) => { const h = HS2[r.c] || {};
+    return `<li title="${esc(h.full || h.name || r.c)}"${can ? ` class="click" role="button" tabindex="0" data-flow="${flow}" data-chap="${r.c}"` : ""}><span class="rk">${j + 1}</span><span class="gn"><small>${r.c}</small>${h.icon ? h.icon + " " : ""}${esc(h.name || "Chapter " + r.c)}</span><span class="gv">${fmt(r.v)} <small style="color:var(--muted);font-weight:400">${(r.v / total * 100).toFixed(0)}%</small></span><span class="gb"><i style="width:${(r.v / max * 100).toFixed(1)}%;background:${col}"></i></span></li>`; }, "categories");
 }
 const LEVEL = { 2: "HS2 chapter", 4: "HS4 heading", 6: "HS6 subheading", 8: "CN8 product" };
 function labelOf(code) {
@@ -458,12 +487,11 @@ function drawChapter(cur) {
   let body;
   if (!node) body = `<p class="empty">Nothing recorded ${S.measure === "value" ? "by value" : "by weight"} for this item in ${T ? T.year : "the detailed data"}.</p>`;
   else {
-    const [, total, kids] = node, max = kids.length ? kids[0][1] : 1, rest = total - d3.sum(kids, k => k[1]);
-    const next = kids.length ? LEVEL[kids[0][0].length] : null;
+    const [, total, kids] = node, next = kids.length ? LEVEL[kids[0][0].length] : null;
+    const rows = kids.map(([c, v, sub]) => ({ c, v, sub })).filter(r => r.v > 0);
     body = `<div class="dk"><div class="wide"><div class="k">${esc(dir)} · ${T.year}</div><div class="v">${fmt(total)}</div>${code.length === 2 ? `<div class="n">${esc(h.full || h.name || "")}</div>` : ""}</div></div>` +
-      (kids.length ? `<section class="goods"><h3><i style="background:${col}"></i>Top ${Math.min(5, kids.length)} · ${next}s</h3><ol>${kids.map(([p, v, sub], j) =>
-        `<li class="prod${sub.length ? " click" : ""}"${sub.length ? ` role="button" tabindex="0" data-code="${p}"` : ""} title="${esc(LABELS[p] || p)}"><span class="rk">${j + 1}</span><span class="gn"><small>${p}</small>${esc(LABELS[p] || "Code " + p)}</span><span class="gv">${fmt(v)} <small style="color:var(--muted);font-weight:400">${total ? (v / total * 100).toFixed(0) : 0}%</small></span><span class="gb"><i style="width:${(v / max * 100).toFixed(1)}%;background:${col}"></i></span>${sub.length ? `<span class="leaf">Mainly ${sub[0][0]} · ${esc(LABELS[sub[0][0]] || "")}</span>` : ""}</li>`).join("")}</ol>
-        ${rest > total * 0.005 ? `<div class="other">Other: ${fmt(rest)} (${(rest / total * 100).toFixed(0)}%)</div>` : ""}</section>`
+      (rows.length ? `<section class="goods"><h3><i style="background:${col}"></i>${next}s</h3>${rankedList(`${c}|${flow}|${path.join(">")}`, rows, total, col, (r, j, max) =>
+        `<li class="prod${r.sub.length ? " click" : ""}"${r.sub.length ? ` role="button" tabindex="0" data-code="${r.c}"` : ""} title="${esc(LABELS[r.c] || r.c)}"><span class="rk">${j + 1}</span><span class="gn"><small>${r.c}</small>${esc(LABELS[r.c] || "Code " + r.c)}</span><span class="gv">${fmt(r.v)} <small style="color:var(--muted);font-weight:400">${total ? (r.v / total * 100).toFixed(0) : 0}%</small></span><span class="gb"><i style="width:${(r.v / max * 100).toFixed(1)}%;background:${col}"></i></span>${r.sub.length ? `<span class="leaf">Mainly ${r.sub[0][0]} · ${esc(LABELS[r.sub[0][0]] || "")}</span>` : ""}</li>`, "items")}</section>`
         : `<p class="empty">This is the most detailed level: an 8-digit CN product code.</p>`);
   }
   const yr = yearFor(cur.i).yr;
@@ -473,6 +501,7 @@ function drawChapter(cur) {
     ${body}
     ${T && T.year !== yr ? `<p class="note">Product detail is for ${T.year}, the most detailed year prepared; the map shows ${yr}.</p>` : ""}`;
   $("back").onclick = goUp;
+  wireMore(el, () => drawDetail(CUR));
   el.querySelectorAll(".crumb[data-depth]").forEach(b => b.onclick = () => { const k = +b.dataset.depth; if (k === 0) S.chap = null; else S.chap.path = path.slice(0, k); drawDetail(CUR); });
   el.querySelectorAll("li.click").forEach(li => {
     const open = () => { S.chap.path.push(li.dataset.code); drawDetail(CUR); el.scrollTop = 0; };
@@ -498,6 +527,7 @@ function drawDetail(cur) {
       : `<section class="goods"><h3><i style="background:var(--exp)"></i>Luxembourg exports to ${esc(nm)}</h3>${goodsList(c, "Exports", yr)}</section>`}
     ${TREE[c] ? `<p class="note">Click a category for its top 5 products, then keep clicking to go down to 8-digit products (${TREE[c].year} detail).</p>` : `<p class="note">Product detail is prepared for the 40 largest partners only.</p>`}`;
   $("back").onclick = () => select(null);
+  wireMore(el, () => drawDetail(CUR));
   el.querySelectorAll("li.click").forEach(li => {
     const open = () => { S.chap = { flow: li.dataset.flow, path: [li.dataset.chap] }; drawDetail(CUR); el.scrollTop = 0; };
     li.onclick = open; li.onkeydown = e => { if (e.key === "Enter") open(); };
@@ -506,7 +536,7 @@ function drawDetail(cur) {
 function select(code) {
   S.sel = code && code === S.sel ? null : code; S.chap = null;
   const on = !!S.sel;
-  $("detail").hidden = !on; $("topkpi").hidden = on; $("list").hidden = on;
+  $("detail").hidden = !on; $("topkpi").hidden = on; $("list").hidden = on; $("morep").hidden = on;
   document.querySelector(".main").classList.toggle("wide", on);
   S.focusKey = ""; S.auto = true; $("fit").hidden = true;
   update(true);
