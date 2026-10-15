@@ -11,6 +11,7 @@ prepared file are fetched live from the Eurostat API (python/trade_tree.py).
 import json
 import sys
 from pathlib import Path
+import seasonality
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -217,7 +218,7 @@ idx = frame_indices(step)
 
 st.title("Luxembourg's trade in goods")
 tabs = st.tabs(["Partners race", "Partners lines", "Products race", "Products lines",
-                "Partner detail", "Country comparison", "Transport & CO₂"])
+                "Partner detail", "Country comparison", "Transport & CO₂", "Seasonality"])
 
 # ---- 1. Partners race -------------------------------------------------------
 with tabs[0]:
@@ -575,3 +576,8 @@ with tabs[6]:
 """)
         st.dataframe(pd.DataFrame([{"Mode": f["mode"].replace("_", " "), "g CO₂e / t-km": f["factor"], "Source (GLEC Framework v3.1)": f["ref"]}
                                    for f in T["factors"]]), hide_index=True, width="stretch")
+
+with tabs[7]:
+    st.header("What does Luxembourg trade?")
+    # KPI cards, timeline and product charts
+    seasonality.render()
