@@ -4,12 +4,12 @@ from __future__ import annotations
 def render(ctx):
     st, pd, go = ctx.st, ctx.pd, ctx.go
     D = ctx.D
-    measure = ctx.measure
     flag, name, fmt = ctx.flag, ctx.name, ctx.fmt
     EXPORT_COL, IMPORT_COL = ctx.EXPORT_COL, ctx.IMPORT_COL
     big_period_label, play_controls = ctx.big_period_label, ctx.play_controls
     CMP = D["countries"]
-    st.subheader("How does Luxembourg's trade compare with other EU countries?")
+    measure = st.radio("Measure", ["quantity", "value"], horizontal=True, key="cmp_measure",
+                       format_func=lambda m: "Quantity (tonnes)" if m == "quantity" else "Value (€)")
     scale = st.radio("Scale", ["total", "pc"], horizontal=True, key="cmp_scale",
                      format_func=lambda s: "Total" if s == "total" else "Per inhabitant")
     years = CMP["years"]
