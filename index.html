@@ -157,68 +157,42 @@
         <div id="cmp-chart"></div>
         <div class="tip" id="cmp-tip" hidden></div>
       </div>
-      <p class="note">Per inhabitant = a reporter's imports (or exports) of goods with the whole world in a year, divided by its population that year. Countries are ranked by imports per inhabitant; Luxembourg is pinned to the top row, and the number before each other country is its rank. Dashed lines mark the EU27 level (the sum of the 27 members' trade divided by their population). The United Kingdom reports until 2019. Goods only, not services. Sources: Eurostat Comext DS-045409 (EU trade since 1988), World Bank World Development Indicators (SP.POP.TOTL).</p>
+      <p class="note">Per inhabitant = a reporter's imports (or exports) of goods with the whole world in a year, divided by its population that year. Countries are ranked by imports per inhabitant; Luxembourg is pinned to the top row, and the number before each other country is its rank. Dashed lines mark the EU27 level (the sum of the 27 members' trade divided by their population). The United Kingdom reports until 2019. Goods only, not services. Sources: Eurostat Dataset DS-045409 (EU trade since 1988), World Bank World Development Indicators (SP.POP.TOTL).</p>
     </div>
   </section>
 
   <section id="methodology" class="view method" aria-labelledby="method-title">
     <p class="intro-kicker">Methodology</p>
     <h2 id="method-title">How the figures are made</h2>
-    <div class="method-grid">
-      <article>
-        <h3>Data sources</h3>
-        <ul>
-          <li><b>Trade:</b> Eurostat, EU trade since 1988 by HS2-4-6 and CN8 (Comext, DS-045409). Luxembourg as reporter, all partner countries, monthly and annual, 1999 to mid-2026.</li>
-          <li><b>Trade of other countries:</b> the same dataset, each reporter's trade with the whole world, all goods, annual.</li>
-          <li><b>Population:</b> World Bank, World Development Indicators, population total (SP.POP.TOTL), 1999–2025.</li>
-        </ul>
-      </article>
-      <article>
-        <h3>Measures</h3>
-        <ul>
-          <li><b>Value</b> in euros at current prices, not adjusted for inflation.</li>
-          <li><b>Weight</b> in tonnes (Eurostat reports units of 100 kg).</li>
-          <li><b>Goods only.</b> Trade in services, such as finance, is not included.</li>
-        </ul>
-      </article>
-      <article>
-        <h3>Trading partners (world map)</h3>
-        <ul>
-          <li>Stepping by <b>year</b> shows calendar-year totals (1999–2025). Stepping by <b>month</b> shows, for each month, the total of the 12 months up to and including it (to June 2026), so seasonal swings do not move the ranking.</li>
-          <li>Partners are ranked by that total; the five largest are highlighted and ranks 6–25 open with "show more".</li>
-          <li>The trend chart for a selected country uses calendar-year totals.</li>
-          <li>For trade inside the EU the partner is the member state the goods were shipped from or to, which can be a transit country such as Belgium or the Netherlands. For imports from outside the EU it is the country of origin.</li>
-          <li>Partners Eurostat keeps confidential are counted in totals and rankings but cannot be placed on the map.</li>
-        </ul>
-      </article>
-      <article>
-        <h3>Products (world map, click a country)</h3>
-        <ul>
-          <li>Products follow the customs nomenclature, which gets more specific with each pair of digits: <b>category</b> (2 digits, HS chapter), <b>product group</b> (4), <b>product type</b> (6) and <b>specific product</b> (8, EU CN code).</li>
-          <li>Categories for each country are given per calendar year from 1999 to 2025.</li>
-          <li>The deeper levels are prepared for the 40 largest partners, for 2025. Very small items are grouped as "not itemised".</li>
-          <li>The partner chart under the map shows each country's share of Luxembourg's imports (or exports) of the product you open. For a category it uses the same period as the map; for product groups, product types and specific products it loads the calendar year shown on the map from the Eurostat API, covering all partners. The seven largest partners are shown separately and the rest as "other partners".</li>
-        </ul>
-      </article>
-      <article>
-        <h3>International comparison</h3>
-        <ul>
-          <li><b>Imports per inhabitant</b> = a country's imports of goods from the whole world in a year ÷ its population that year. Exports per inhabitant are computed the same way.</li>
-          <li>Countries are the 27 EU member states and the United Kingdom, which reports until 2019.</li>
-          <li>The <b>EU27 reference</b> (dashed lines) is the sum of the 27 members' trade divided by the sum of their populations.</li>
-          <li>Countries are ranked by imports per inhabitant; Luxembourg is pinned to the top row.</li>
-        </ul>
-      </article>
-      <article>
-        <h3>Limits</h3>
-        <ul>
-          <li>A country's trade includes goods passing through on their way elsewhere, which inflates the figures for logistics hubs such as Belgium, the Netherlands and Luxembourg.</li>
-          <li>Totals for imports and exports within the EU are reported separately by each country and do not always match the partner's figures.</li>
-          <li>The latest months are provisional and may be revised by Eurostat.</li>
-        </ul>
-      </article>
-    </div>
-    <p class="method-foot">Data last retrieved from Eurostat on 14–15 October 2026. Start page illustration: Freepik.</p>
+    <p class="method-lede">Every number on this page comes from two public datasets, prepared in four steps that anyone can follow and run again.</p>
+
+    <ol class="steps" aria-label="The four steps from public data to the charts on this page">
+      <li>
+        <h3>Download</h3>
+        <p>Eurostat Dataset provides the trade in goods and the World Bank provides the population figures. Both are free to download, and the exact queries we used are written down, so the same files can be fetched again.</p>
+      </li>
+      <li>
+        <h3>Prepare</h3>
+        <p>Years, products and trade flows are matched up, and quantities are converted to tonnes. Where a figure is missing in the source it stays missing here, and partial years are kept out of the annual comparisons.</p>
+      </li>
+      <li>
+        <h3>Calculate</h3>
+        <p>Partners are ranked by the value or the weight of their trade, and trade per inhabitant is simply trade divided by population. The same rule is applied to every country and every year.</p>
+      </li>
+      <li>
+        <h3>Publish</h3>
+        <p>The prepared figures are bundled into the small data files this page reads, so the map and the comparison open straight from the folder. Running <code>node scripts/build-data.mjs</code> rebuilds them from the same input.</p>
+      </li>
+    </ol>
+
+    <ul class="principles" aria-label="What this approach is built for">
+      <li><b>Simple</b><span>Two sources and a short set of rules, all set out on this page.</span></li>
+      <li><b>Robust</b><span>Nothing is filled in, smoothed or guessed, so a gap in the source stays visible as a gap.</span></li>
+      <li><b>Open</b><span>The sources, the prepared data and the build script all travel with the site.</span></li>
+      <li><b>Easy to use</b><span>No install and no server. Open the page and start exploring.</span></li>
+    </ul>
+
+    <p class="method-foot">Goods only; values are not adjusted for inflation. Trade hubs, reporting differences and revisions are important limitations. Data retrieved on 14 and 15 October 2026.</p>
   </section>
 </main>
 

@@ -1,0 +1,390 @@
+{
+ "01": {
+  "short": "Live animals",
+  "icon": "🐄"
+ },
+ "02": {
+  "short": "Meat",
+  "icon": "🥩"
+ },
+ "03": {
+  "short": "Fish & seafood",
+  "icon": "🐟"
+ },
+ "04": {
+  "short": "Dairy, eggs & honey",
+  "icon": "🧀"
+ },
+ "05": {
+  "short": "Other animal products",
+  "icon": "🦴"
+ },
+ "06": {
+  "short": "Plants & flowers",
+  "icon": "💐"
+ },
+ "07": {
+  "short": "Vegetables",
+  "icon": "🥕"
+ },
+ "08": {
+  "short": "Fruit & nuts",
+  "icon": "🍎"
+ },
+ "09": {
+  "short": "Coffee, tea & spices",
+  "icon": "☕"
+ },
+ "10": {
+  "short": "Cereals",
+  "icon": "🌾"
+ },
+ "11": {
+  "short": "Flour & malt",
+  "icon": "🥖"
+ },
+ "12": {
+  "short": "Oil seeds",
+  "icon": "🌻"
+ },
+ "13": {
+  "short": "Gums & resins",
+  "icon": "🌳"
+ },
+ "14": {
+  "short": "Other plant materials",
+  "icon": "🎋"
+ },
+ "15": {
+  "short": "Fats & oils",
+  "icon": "🫒"
+ },
+ "16": {
+  "short": "Meat & fish preparations",
+  "icon": "🥫"
+ },
+ "17": {
+  "short": "Sugar & sweets",
+  "icon": "🍬"
+ },
+ "18": {
+  "short": "Cocoa & chocolate",
+  "icon": "🍫"
+ },
+ "19": {
+  "short": "Bread, pasta & pastry",
+  "icon": "🥐"
+ },
+ "20": {
+  "short": "Fruit & vegetable preparations",
+  "icon": "🍓"
+ },
+ "21": {
+  "short": "Other food preparations",
+  "icon": "🍲"
+ },
+ "22": {
+  "short": "Beverages",
+  "icon": "🍷"
+ },
+ "23": {
+  "short": "Animal feed & food waste",
+  "icon": "🐖"
+ },
+ "24": {
+  "short": "Tobacco",
+  "icon": "🚬"
+ },
+ "25": {
+  "short": "Salt, stone, lime & cement",
+  "icon": "🪨"
+ },
+ "26": {
+  "short": "Ores, slag & ash",
+  "icon": "⛰️"
+ },
+ "27": {
+  "short": "Mineral fuels & oils",
+  "icon": "🛢️"
+ },
+ "28": {
+  "short": "Inorganic chemicals",
+  "icon": "⚗️"
+ },
+ "29": {
+  "short": "Organic chemicals",
+  "icon": "🧪"
+ },
+ "30": {
+  "short": "Pharmaceuticals",
+  "icon": "💊"
+ },
+ "31": {
+  "short": "Fertilisers",
+  "icon": "🌱"
+ },
+ "32": {
+  "short": "Paints, dyes & inks",
+  "icon": "🎨"
+ },
+ "33": {
+  "short": "Perfumes & cosmetics",
+  "icon": "💄"
+ },
+ "34": {
+  "short": "Soap & waxes",
+  "icon": "🧼"
+ },
+ "35": {
+  "short": "Glues & enzymes",
+  "icon": "🧴"
+ },
+ "36": {
+  "short": "Explosives & matches",
+  "icon": "🧨"
+ },
+ "37": {
+  "short": "Photographic goods",
+  "icon": "📷"
+ },
+ "38": {
+  "short": "Other chemical products",
+  "icon": "🧫"
+ },
+ "39": {
+  "short": "Plastics",
+  "icon": "♻️"
+ },
+ "40": {
+  "short": "Rubber",
+  "icon": "🛞"
+ },
+ "41": {
+  "short": "Hides & leather (raw)",
+  "icon": "🐂"
+ },
+ "42": {
+  "short": "Leather goods & bags",
+  "icon": "👜"
+ },
+ "43": {
+  "short": "Furskins",
+  "icon": "🦊"
+ },
+ "44": {
+  "short": "Wood",
+  "icon": "🪵"
+ },
+ "45": {
+  "short": "Cork",
+  "icon": "🍾"
+ },
+ "46": {
+  "short": "Basketwork",
+  "icon": "🧺"
+ },
+ "47": {
+  "short": "Wood pulp & recovered paper",
+  "icon": "📦"
+ },
+ "48": {
+  "short": "Paper & cardboard",
+  "icon": "📄"
+ },
+ "49": {
+  "short": "Printed matter",
+  "icon": "📰"
+ },
+ "50": {
+  "short": "Silk",
+  "icon": "🧵"
+ },
+ "51": {
+  "short": "Wool",
+  "icon": "🐑"
+ },
+ "52": {
+  "short": "Cotton",
+  "icon": "☁️"
+ },
+ "53": {
+  "short": "Other plant fibres",
+  "icon": "🌿"
+ },
+ "54": {
+  "short": "Synthetic filaments",
+  "icon": "🧶"
+ },
+ "55": {
+  "short": "Synthetic fibres",
+  "icon": "🧶"
+ },
+ "56": {
+  "short": "Wadding & ropes",
+  "icon": "🪢"
+ },
+ "57": {
+  "short": "Carpets",
+  "icon": "🟫"
+ },
+ "58": {
+  "short": "Special fabrics",
+  "icon": "🪡"
+ },
+ "59": {
+  "short": "Coated fabrics",
+  "icon": "🎽"
+ },
+ "60": {
+  "short": "Knitted fabrics",
+  "icon": "🧶"
+ },
+ "61": {
+  "short": "Knitted clothing",
+  "icon": "👕"
+ },
+ "62": {
+  "short": "Clothing (not knitted)",
+  "icon": "👔"
+ },
+ "63": {
+  "short": "Other textile articles",
+  "icon": "🛏️"
+ },
+ "64": {
+  "short": "Footwear",
+  "icon": "👟"
+ },
+ "65": {
+  "short": "Headgear",
+  "icon": "🧢"
+ },
+ "66": {
+  "short": "Umbrellas & canes",
+  "icon": "☂️"
+ },
+ "67": {
+  "short": "Feathers & artificial flowers",
+  "icon": "🪶"
+ },
+ "68": {
+  "short": "Stone, plaster & cement articles",
+  "icon": "🧱"
+ },
+ "69": {
+  "short": "Ceramics",
+  "icon": "🏺"
+ },
+ "70": {
+  "short": "Glass",
+  "icon": "🪟"
+ },
+ "71": {
+  "short": "Precious metals & jewellery",
+  "icon": "💎"
+ },
+ "72": {
+  "short": "Iron & steel",
+  "icon": "🏗️"
+ },
+ "73": {
+  "short": "Iron & steel articles",
+  "icon": "🔩"
+ },
+ "74": {
+  "short": "Copper",
+  "icon": "🟠"
+ },
+ "75": {
+  "short": "Nickel",
+  "icon": "⚪"
+ },
+ "76": {
+  "short": "Aluminium",
+  "icon": "🥫"
+ },
+ "78": {
+  "short": "Lead",
+  "icon": "🔋"
+ },
+ "79": {
+  "short": "Zinc",
+  "icon": "🔘"
+ },
+ "80": {
+  "short": "Tin",
+  "icon": "🥫"
+ },
+ "81": {
+  "short": "Other base metals",
+  "icon": "⚙️"
+ },
+ "82": {
+  "short": "Tools & cutlery",
+  "icon": "🔧"
+ },
+ "83": {
+  "short": "Other metal articles",
+  "icon": "🔑"
+ },
+ "84": {
+  "short": "Machinery",
+  "icon": "⚙️"
+ },
+ "85": {
+  "short": "Electrical equipment",
+  "icon": "🔌"
+ },
+ "86": {
+  "short": "Railway equipment",
+  "icon": "🚆"
+ },
+ "87": {
+  "short": "Vehicles",
+  "icon": "🚗"
+ },
+ "88": {
+  "short": "Aircraft & spacecraft",
+  "icon": "✈️"
+ },
+ "89": {
+  "short": "Ships & boats",
+  "icon": "🚢"
+ },
+ "90": {
+  "short": "Instruments & medical devices",
+  "icon": "🔬"
+ },
+ "91": {
+  "short": "Clocks & watches",
+  "icon": "⌚"
+ },
+ "92": {
+  "short": "Musical instruments",
+  "icon": "🎸"
+ },
+ "93": {
+  "short": "Arms & ammunition",
+  "icon": "🎯"
+ },
+ "94": {
+  "short": "Furniture & lighting",
+  "icon": "🛋️"
+ },
+ "95": {
+  "short": "Toys & sports goods",
+  "icon": "🧸"
+ },
+ "96": {
+  "short": "Miscellaneous articles",
+  "icon": "✏️"
+ },
+ "97": {
+  "short": "Works of art & antiques",
+  "icon": "🖼️"
+ },
+ "99": {
+  "short": "Other / confidential",
+  "icon": "❓"
+ }
+}

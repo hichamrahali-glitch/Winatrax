@@ -19,8 +19,9 @@
 // population are the sums over their members in each year. It also writes the result as
 // data/derived/trade_per_inhabitant.csv.
 //
-// The data in data/derived/ is frozen: the Python pipeline that downloaded it from Eurostat has
-// been removed (it is in the git history). Re-run this script only if those JSON files change.
+// The data in data/derived/ is frozen. The Python pipeline that downloads it from Eurostat and
+// writes data/derived/ is in scripts/ingestion/ and scripts/processing/ (see the README); re-run
+// this script after that pipeline, or whenever those JSON files change.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
