@@ -47,5 +47,3 @@ If anything in `data/derived/` or `data/raw/` changes, rebuild the bundles with 
 ```bash
 node scripts/build-data.mjs
 ```
-
-`data/derived/seasonality.json` and `data/derived/transport_data.json` are not used by the current views.
